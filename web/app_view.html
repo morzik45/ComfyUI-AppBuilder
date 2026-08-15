@@ -672,11 +672,11 @@
         .system-monitor-panel {
             background-color: var(--bg); border-bottom: 1.5px solid var(--border); display: flex; flex-direction: column;
             transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
-            padding: 8px 12px 9px 12px; gap: 6px; overflow: hidden; z-index: 99; flex-shrink: 0; width: 100%;
+            padding: 8px 12px 8px 12px; gap: 4px; overflow: hidden; z-index: 99; flex-shrink: 0; width: 100%;
         }
         .system-monitor-panel.collapsed { max-height: 0; padding-top: 0; padding-bottom: 0; border-bottom: none; pointer-events: none; }
         .monitor-row { display: flex; gap: 10px; width: 100%; align-items: center; }
-        .monitor-item { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+        .monitor-item { flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
         .monitor-label { display: flex; justify-content: space-between; font-size: 10px; font-weight: bold; color: var(--title); font-family: monospace; }
         .monitor-label span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .monitor-bar-track { height: 7px; background-color: var(--border); border-radius: 4px; overflow: hidden; border: 1px solid var(--border); }
@@ -890,12 +890,16 @@
                 <!-- 第一行：系统内存 RAM -->
                 <div class="monitor-row">
                     <div class="monitor-item">
-                        <div class="monitor-label"><span>System RAM</span><span id="mon-ram-text">0/0 GB (0%)</span></div>
+                        <div class="monitor-label"><span>CPU</span><span id="mon-cpu-text">0%</span></div>
+                        <div class="monitor-bar-track"><div class="monitor-bar-fill" id="mon-cpu-bar" style="width: 0%;"></div></div>
+                    </div>
+                    <div class="monitor-item">
+                        <div class="monitor-label"><span>RAM</span><span id="mon-ram-text">0/0 GB 0%</span></div>
                         <div class="monitor-bar-track"><div class="monitor-bar-fill" id="mon-ram-bar" style="width: 0%;"></div></div>
                     </div>
                 </div>
                 <!-- 第二行及以后：GPU 动态渲染区 -->
-                <div id="gpu-monitor-container" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                <div id="gpu-monitor-container" style="display: flex; flex-direction: column; gap: 4px;"></div>
             </div>
             
             <div class="preview-section">
@@ -4041,7 +4045,14 @@
                 if (!res.ok) return;
                 const data = await res.json();
                 
-                // 1. 第一行：RAM 渲染
+                // 1. 第一行：CPU/RAM 渲染
+                const cpuPct = Number(data.system.cpu_utilization || 0);
+                
+                document.getElementById('mon-cpu-text').innerText = `${cpuPct.toFixed(1)}%`;
+                const cpuBar = document.getElementById('mon-cpu-bar');
+                cpuBar.style.width = `${cpuPct}%`;
+                cpuBar.className = `monitor-bar-fill ${cpuPct > 85 ? 'danger' : (cpuPct > 70 ? 'warn' : '')}`;
+                
                 const ramTotal = data.system.ram_total || 0;
                 const ramUsed = data.system.ram_used || 0;
                 const ramPct = Number(data.system.ram_utilization || 0);
@@ -4098,9 +4109,7 @@
                     monitorPanel.classList.remove('collapsed');
                     monitorBtn.classList.add('active');
                     fetchAndUpdateSystemMonitor();
-                    if (!systemMonitorTimer) {
-                        systemMonitorTimer = setInterval(fetchAndUpdateSystemMonitor, 1500);
-                    }
+                    if (!systemMonitorTimer) systemMonitorTimer = setInterval(fetchAndUpdateSystemMonitor, 1000);
                 } else {
                     monitorPanel.classList.add('collapsed');
                     monitorBtn.classList.remove('active');

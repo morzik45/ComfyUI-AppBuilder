@@ -1,6 +1,8 @@
 import os
 import sys
 import json
+import psutil
+import pynvml
 import logging
 import hashlib
 import traceback
@@ -14,6 +16,12 @@ from aiohttp import web
 from nodes import LoraLoader
 from server import PromptServer
 from comfy_api.internal import _ComfyNodeInternal
+
+try:
+    pynvml.nvmlInit()
+    pynvml_initialized = True
+except Exception:
+    pynvml_initialized = False
 
 class AppBuilder:
     @classmethod
@@ -526,58 +534,70 @@ async def get_fast_object_info_smart(request):
 
 @PromptServer.instance.routes.get("/appbuilder/system_stats")
 async def system_stats(request):
-    # 1. 内存 RAM (ComfyUI 原生)
-    cpu_device = comfy.model_management.torch.device("cpu")
-    ram_total = comfy.model_management.get_total_memory(cpu_device)
-    ram_free = comfy.model_management.get_free_memory(cpu_device)
-    ram_used = max(0, ram_total - ram_free)
-    ram_utilization = round((ram_used / ram_total) * 100, 1) if ram_total > 0 else 0
+    # 1. CPU 利用率与核心数 (非阻塞获取，耗时 0ms)
+    cpu_utilization = round(psutil.cpu_percent(interval=None), 1)
+    cpu_count = psutil.cpu_count(logical=True) # 逻辑 CPU 核心数
     
-    # 2. NVIDIA GPU 核心用量与显存 VRAM (PyTorch 原生)
-    primary_device = comfy.model_management.get_torch_device()
-    torch_devices = comfy.model_management.get_all_torch_devices()
-    if primary_device in torch_devices:
-        torch_devices = [primary_device] + [d for d in torch_devices if d != primary_device]
-    else:
-        torch_devices = [primary_device] + list(torch_devices)
-        
-    torch_lib = comfy.model_management.torch
+    # 2. 内存 RAM
+    virtual_mem = psutil.virtual_memory()
+    ram_total = virtual_mem.total
+    ram_free = virtual_mem.available
+    ram_used = ram_total - ram_free
+    ram_utilization = round(virtual_mem.percent, 1)
+    
+    # 3. NVIDIA GPU 信息 (使用 NVML 独立查询，绝不与 aimdo/VBAR 冲撞)
     device_entries = []
     
-    for d in torch_devices:
-        if d.type != "cuda":
-            continue  # 只读取 NVIDIA 设备
-        
-        vram_total, _ = comfy.model_management.get_total_memory(d, torch_total_too=True)
-        vram_free, _ = comfy.model_management.get_free_memory(d, torch_free_too=True)
-        vram_used = max(0, vram_total - vram_free)
-        vram_utilization = round((vram_used / vram_total) * 100, 1) if vram_total > 0 else 0
-        
-        gpu_utilization = 0
-        if torch_lib.cuda.is_available():
-            try:
-                idx = d.index if d.index is not None else 0
-                gpu_utilization = torch_lib.cuda.utilization(idx)
-            except Exception:
-                gpu_utilization = 0
+    if pynvml_initialized:
+        try:
+            device_count = pynvml.nvmlDeviceGetCount()
+            for i in range(device_count):
+                handle = pynvml.nvmlDeviceGetHandleByIndex(i)
                 
-        device_entries.append({
-            "name": comfy.model_management.get_torch_device_name(d),
-            "type": d.type,
-            "index": d.index,
-            "gpu_utilization": gpu_utilization,
-            "vram_total": vram_total,
-            "vram_free": vram_free,
-            "vram_used": vram_used,
-            "vram_utilization": vram_utilization
-        })
-        
+                # 获取显卡名称
+                gpu_name = pynvml.nvmlDeviceGetName(handle)
+                if isinstance(gpu_name, bytes):
+                    gpu_name = gpu_name.decode('utf-8', errors='ignore')
+                    
+                # 获取显存（走 nvml.dll，避开 CUDA Driver API 碰撞）
+                mem_info = pynvml.nvmlDeviceGetMemoryInfo(handle)
+                vram_total = mem_info.total
+                vram_used = mem_info.used
+                vram_free = mem_info.free
+                vram_utilization = round((vram_used / vram_total) * 100, 1) if vram_total > 0 else 0
+                
+                # 获取 GPU 核心利用率与温度
+                gpu_utilization = 0
+                gpu_temperature = 0
+                try:
+                    gpu_utilization = pynvml.nvmlDeviceGetUtilizationRates(handle).gpu
+                    gpu_temperature = pynvml.nvmlDeviceGetTemperature(handle, pynvml.NVML_TEMPERATURE_GPU)
+                except Exception:
+                    pass
+                    
+                device_entries.append({
+                    "name": gpu_name,
+                    "type": "cuda",
+                    "index": i,
+                    "gpu_utilization": gpu_utilization,
+                    "gpu_temperature": gpu_temperature,
+                    "vram_total": vram_total,
+                    "vram_free": vram_free,
+                    "vram_used": vram_used,
+                    "vram_utilization": vram_utilization
+                })
+        except Exception:
+            pass
+            
+    # 4. 返回 JSON 数据
     return web.json_response({
         "system": {
-            "ram_total": ram_total,
-            "ram_free": ram_free,
-            "ram_used": ram_used,
-            "ram_utilization": ram_utilization
+            "cpu_utilization": cpu_utilization, # CPU 利用率 (例如: 25.5)
+            "cpu_count": cpu_count,             # CPU 核心数 (例如: 16)
+            "ram_total": ram_total,             # 总内存 (字节)
+            "ram_free": ram_free,               # 可用内存 (字节)
+            "ram_used": ram_used,               # 已用内存 (字节)
+            "ram_utilization": ram_utilization  # 内存利用率 (例如: 45.2)
         },
         "devices": device_entries
     })
