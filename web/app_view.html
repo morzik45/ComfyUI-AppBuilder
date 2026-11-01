@@ -349,11 +349,17 @@
         .workflow-text-output {
             position: relative; width: 100%; min-height: 96px; max-height: 320px; overflow: auto;
             padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
-            background: var(--bg); color: var(--text);
+            background: var(--bg); color: var(--text); cursor: text;
+            -webkit-user-select: text !important; -moz-user-select: text !important;
+            -ms-user-select: text !important; user-select: text !important;
+            -webkit-touch-callout: default !important;
         }
         .workflow-text-output.empty { color: var(--title); display: flex; align-items: center; justify-content: center; text-align: center; }
         .workflow-text-output-text {
             margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font: 13px/1.45 monospace; color: inherit;
+            -webkit-user-select: text !important; -moz-user-select: text !important;
+            -ms-user-select: text !important; user-select: text !important;
+            -webkit-touch-callout: default !important;
         }
         .workflow-text-output-status {
             display: block; margin-top: 6px; color: var(--title); font-size: 10px; text-align: right;
