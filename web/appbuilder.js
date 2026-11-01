@@ -428,6 +428,7 @@ const closeActiveWorkflow = async () => {
 function openAppViewIframe(node) {
     const htmlUrl = new URL('app_view.html', import.meta.url);
     htmlUrl.searchParams.set('nodeId', node.id);
+    htmlUrl.searchParams.set('_appbuilder_ts', Date.now().toString());
     const oldIframe = document.getElementById("appview-iframe");
     if (oldIframe) oldIframe.remove();
     
@@ -450,7 +451,8 @@ function setupAppWindowBridge(context, api) {
     const eventConfigs = [
         { apiEvent: "b_preview", msgType: "b_preview", payload: (e) => ({ blob: e.detail }) },
         { apiEvent: "executed", msgType: "executed", payload: (e) => ({ detail: e.detail }) },
-        { apiEvent: "execution_start", msgType: "execution_start" },
+        { apiEvent: "execution_start", msgType: "execution_start", payload: (e) => ({ detail: e.detail }) },
+        { apiEvent: "execution_success", msgType: "execution_success", payload: (e) => ({ detail: e.detail }) },
         { apiEvent: "status", msgType: "status", payload: (e) => ({ detail: e.detail }) },
         { apiEvent: "execution_interrupted", msgType: "execution_interrupted" },
         { apiEvent: "progress", msgType: "progress", payload: (e) => ({ detail: e.detail }) },
@@ -500,6 +502,7 @@ function openConfigOverlay(nodeId) {
     const iframe = document.createElement('iframe');
     const htmlUrl = new URL('config_panel.html', import.meta.url);
     htmlUrl.searchParams.set('nodeId', nodeId);
+    htmlUrl.searchParams.set('_appbuilder_ts', Date.now().toString());
     iframe.src = htmlUrl.href;
     iframe.style.cssText = `
         width: 90vw; height: 90vh; max-width: 920px; max-height: 800px;
@@ -556,6 +559,24 @@ function findWidgetOnNode(node, slot) {
 setupAPI();
 
 app.registerExtension({
+    name: "AppBuilder.TextOutputNodeId",
+    async beforeRegisterNodeDef(nodeType, nodeData) {
+        if (nodeData.name !== "AppBuilderTextOutput") return;
+        const originalDrawForeground = nodeType.prototype.onDrawForeground;
+        nodeType.prototype.onDrawForeground = function(ctx) {
+            if (originalDrawForeground) originalDrawForeground.apply(this, arguments);
+            if (this.flags?.collapsed || this.id === undefined || this.id === null) return;
+            ctx.save();
+            ctx.font = "11px sans-serif";
+            ctx.fillStyle = "#999";
+            ctx.textAlign = "right";
+            ctx.fillText(`Node ID: ${this.id}`, this.size[0] - 10, this.size[1] - 8);
+            ctx.restore();
+        };
+    }
+});
+
+app.registerExtension({
     name: "AppBuilder.AppBuilderAdv",
     async setup() {
         const originalGraphToPrompt = app.graphToPrompt;
@@ -573,7 +594,7 @@ app.registerExtension({
                         
                         const entries = Object.entries(config).slice(0, 32).filter(([k, p]) => {
                             const t = (p.type || "STRING").toUpperCase();
-                            return t !== "BUTTON" && t !== "BYPASSER";
+                            return !["BUTTON", "BYPASSER", "TEXT_OUTPUT"].includes(t);
                         });
                         
                         panelOutputs[nodeId] = {};
@@ -951,7 +972,8 @@ app.registerExtension({
                     try { config = JSON.parse(jsonWidget.value || "{}"); } catch (e) { return; }
                     const entries = Object.entries(config).slice(0, 32);
                     const outputEntries = entries.filter(([k, p]) => {
-                        const t = (p.type || "STRING").toUpperCase(); return t !== "BUTTON" && t !== "BYPASSER";
+                        const t = (p.type || "STRING").toUpperCase();
+                        return !["BUTTON", "BYPASSER", "TEXT_OUTPUT"].includes(t);
                     });
 
                     // 校验现有输出槽是否和上游配置完全一致

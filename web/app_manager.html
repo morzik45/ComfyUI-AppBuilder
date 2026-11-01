@@ -379,7 +379,7 @@
                 `;
                 el.onclick = () => {
                     if (isStandalone) {
-                        window.location.href = `app_view.html?app=${encodeURIComponent(item.name)}&mode=standalone&nocache`;
+                        window.location.href = `app_view.html?app=${encodeURIComponent(item.name)}&mode=standalone&_appbuilder_ts=${Date.now()}`;
                     } else {
                         const splash = document.getElementById('splash-screen');
                         splash.style.display = "flex";

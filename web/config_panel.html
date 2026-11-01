@@ -152,6 +152,26 @@
             outline: none;
         }
         .form-item input:focus, .form-item select:focus, .form-item textarea:focus { border-color: var(--primary); }
+        .form-item input.hotkey-capture {
+            cursor: pointer; color: #8bbcff; font-family: monospace; font-weight: bold;
+        }
+        .hotkey-hint { font-size: 10px; color: #666; line-height: 1.25; }
+        .combo-auto-row {
+            grid-column: 1 / -1; display: flex; flex-direction: row; align-items: center; gap: 9px;
+            padding: 8px 10px; border: 1px solid var(--border); border-radius: 7px; background: #181818;
+        }
+        .combo-auto-copy { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; }
+        .combo-source-status { font-size: 10px; color: #777; line-height: 1.3; overflow-wrap: anywhere; }
+        .combo-source-status.success { color: #78b98a; }
+        .combo-source-status.error { color: #d9827c; }
+        .btn-combo-refresh {
+            flex: 0 0 auto; width: auto !important; min-height: 30px; padding: 5px 10px !important;
+            border: 1px solid var(--border); border-radius: 6px; background: #252525; color: #ddd;
+            font-size: 11px; font-weight: bold; cursor: pointer;
+        }
+        .btn-combo-refresh:hover:not(:disabled) { border-color: var(--primary); color: #fff; }
+        .btn-combo-refresh:disabled { opacity: 0.4; cursor: default; }
+        .input-values.connection-managed { color: #aaa; border-color: #3d536a; }
         .form-item input[type="checkbox"] {
             width: 20px;
             height: 20px;
@@ -231,6 +251,7 @@
                 <!-- 👇 【这里新增了 LORA STACK 按钮】 -->
                 <button class="btn-type-add" data-i18n="type_lorastack" onclick="addNewControl('LORA_STACK')">📚 LORA STACK</button>
                 <button class="btn-type-add" data-i18n="type_button" onclick="addNewControl('BUTTON')">🖲️ BUTTON (Node)</button>
+                <button class="btn-type-add" onclick="addNewControl('TEXT_OUTPUT')">💬 TEXT OUTPUT (Node)</button>
                 <button class="btn-type-add" data-i18n="type_previewer"onclick="addNewControl('PREVIEWER')">🖼️ PREVIEWER (Node)</button>
             </div>
             <div class="right-cards-list" id="cards-container"></div>
@@ -253,6 +274,306 @@
         let configList = []; 
         let isRawMode = false;
         let isLivePreviewActive = false;
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#039;');
+        }
+
+        function getTextOutputNodeOptions(selectedNodeId) {
+            const selected = String(selectedNodeId ?? '');
+            const nodes = window.parent?.comfyApp?.graph?._nodes?.filter(node => node.type === 'AppBuilderTextOutput') || [];
+            const knownIds = new Set(nodes.map(node => String(node.id)));
+            let options = '<option value="">Select Text Output node…</option>';
+            if (selected && !knownIds.has(selected)) {
+                options += `<option value="${escapeHtml(selected)}" selected>ID ${escapeHtml(selected)} — node not found</option>`;
+            }
+            nodes.forEach(node => {
+                const id = String(node.id);
+                const title = node.title || 'AppBuilder Text Output';
+                options += `<option value="${escapeHtml(id)}" ${id === selected ? 'selected' : ''}>ID ${escapeHtml(id)} — ${escapeHtml(title)}</option>`;
+            });
+            return options;
+        }
+
+        const modifierCodes = new Set([
+            'ControlLeft', 'ControlRight', 'MetaLeft', 'MetaRight',
+            'AltLeft', 'AltRight', 'ShiftLeft', 'ShiftRight'
+        ]);
+
+        function formatHotkey(hotkey) {
+            if (!hotkey) return '';
+            return hotkey.split('+').map(part => {
+                if (part === 'Meta') return '⌘';
+                if (part === 'Ctrl') return 'Ctrl';
+                if (part === 'Alt') return 'Alt';
+                if (part === 'Shift') return 'Shift';
+                if (part.startsWith('Key')) return part.slice(3);
+                if (part.startsWith('Digit')) return part.slice(5);
+                if (part === 'Space') return 'Space';
+                return part;
+            }).join(' + ');
+        }
+
+        function hotkeyFromEvent(e) {
+            if (modifierCodes.has(e.code)) return '';
+            const parts = [];
+            if (e.ctrlKey) parts.push('Ctrl');
+            if (e.metaKey) parts.push('Meta');
+            if (e.altKey) parts.push('Alt');
+            if (e.shiftKey) parts.push('Shift');
+            parts.push(e.code || e.key);
+            return parts.join('+');
+        }
+
+        function setupHotkeyCapture(input) {
+            input.addEventListener('keydown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                if (e.key === 'Escape') {
+                    input.blur();
+                    return;
+                }
+                if (e.key === 'Backspace' || e.key === 'Delete') {
+                    input.dataset.hotkey = '';
+                    input.value = '';
+                    return;
+                }
+
+                const hotkey = hotkeyFromEvent(e);
+                if (!hotkey) return;
+                if ((e.metaKey || e.ctrlKey) && e.code === 'Enter') {
+                    alert(t('hotkey_run_reserved', '⌘/Ctrl + Enter is reserved for Run.'));
+                    return;
+                }
+                input.dataset.hotkey = hotkey;
+                input.value = formatHotkey(hotkey);
+            });
+        }
+
+        function resolveInnerComboTarget(node, slotIndex) {
+            if (!node) return null;
+            if (node.subgraph && node.subgraph._nodes) {
+                const inputSlot = node.inputs?.[slotIndex];
+                if (inputSlot && inputSlot.link !== null && inputSlot.link !== undefined) {
+                    const innerLink = node.subgraph.links?.[inputSlot.link];
+                    if (innerLink) {
+                        const innerNode = node.subgraph.getNodeById(innerLink.target_id);
+                        if (innerNode) return resolveInnerComboTarget(innerNode, innerLink.target_slot);
+                    }
+                }
+            }
+            return { node, slotIndex };
+        }
+
+        function findComboWidget(node, slot) {
+            if (!node?.widgets || !slot) return null;
+            const names = [slot.widget?.name, slot.name, slot.label].filter(Boolean);
+            let widget = node.widgets.find(candidate => names.includes(candidate.name));
+            if (widget) return widget;
+            const baseName = String(slot.name || '').replace(/_\d+$/, '');
+            return node.widgets.find(candidate =>
+                candidate.name === baseName ||
+                candidate.name?.startsWith(baseName) ||
+                (slot.label && (candidate.name?.startsWith(slot.label) || slot.label.startsWith(candidate.name)))
+            ) || null;
+        }
+
+        function getComboNodeDefinition(app, node) {
+            const definitions = app.nodeDefs || app.node_defs || app.extensionManager?.nodeDefs;
+            if (definitions && typeof definitions.get === 'function') return definitions.get(node.type) || node.constructor?.nodeData;
+            return definitions?.[node.type] || node.constructor?.nodeData;
+        }
+
+        function extractComboOptions(app, node, slotIndex) {
+            const slot = node?.inputs?.[slotIndex];
+            if (!slot) return null;
+            let values = Array.isArray(slot.type) ? slot.type : null;
+            const slotWidgetConfig = slot.widget?.config;
+            if (Array.isArray(slotWidgetConfig)) {
+                if (Array.isArray(slotWidgetConfig[0])) values = slotWidgetConfig[0];
+                else {
+                    const configuredValues = slotWidgetConfig[1]?.options || slotWidgetConfig[1]?.values;
+                    if (Array.isArray(configuredValues)) values = configuredValues;
+                }
+            }
+
+            const nodeDef = getComboNodeDefinition(app, node);
+            if (nodeDef?.input) {
+                const slotName = slot.name || '';
+                const baseName = slotName.replace(/_\d+$/, '');
+                const paramDef = nodeDef.input.required?.[slotName] ||
+                    nodeDef.input.optional?.[slotName] ||
+                    nodeDef.input.required?.[baseName] ||
+                    nodeDef.input.optional?.[baseName] ||
+                    (slot.label ? (nodeDef.input.required?.[slot.label] || nodeDef.input.optional?.[slot.label]) : null);
+                if (paramDef) {
+                    const declaredType = paramDef[0];
+                    const declaredOptions = paramDef[1]?.options || paramDef[1]?.values;
+                    if (Array.isArray(declaredType)) values = declaredType;
+                    else if (Array.isArray(declaredOptions)) values = declaredOptions;
+                }
+            }
+
+            const widget = findComboWidget(node, slot);
+            const widgetValues = widget?.options?.values || widget?._origOptions?.values ||
+                widget?.options?.options || widget?._origOptions?.options;
+            if (Array.isArray(widgetValues) && widgetValues.length > 0) values = widgetValues;
+
+            if (!Array.isArray(values) || values.length === 0) return null;
+            const normalized = values
+                .map(value => {
+                    if (value && typeof value === 'object') {
+                        return value.value ?? value.name ?? value.label ?? value.key ?? '';
+                    }
+                    return value;
+                })
+                .map(value => value === null || value === undefined ? '' : String(value))
+                .filter(value => value.length > 0);
+            if (normalized.length === 0) return null;
+            return {
+                values: [...new Set(normalized)],
+                source: `${node.title || node.type} → ${slot.label || slot.name || `input ${slotIndex}`}`
+            };
+        }
+
+        function collectComboOptionsFromLink(app, graph, linkId, visited = new Set()) {
+            const visitKey = `${linkId}`;
+            if (visited.has(visitKey)) return [];
+            visited.add(visitKey);
+            const link = graph?.links?.[linkId];
+            if (!link) return [];
+            const outerTarget = graph.getNodeById(link.target_id);
+            const resolved = resolveInnerComboTarget(outerTarget, link.target_slot);
+            if (!resolved?.node) return [];
+
+            const directOptions = extractComboOptions(app, resolved.node, resolved.slotIndex);
+            if (directOptions) return [directOptions];
+
+            const targetType = `${resolved.node.type || ''} ${resolved.node.comfyClass || ''}`;
+            if (!/reroute/i.test(targetType)) return [];
+            const targetGraph = resolved.node.graph || graph;
+            const results = [];
+            (resolved.node.outputs || []).forEach(output => {
+                (output.links || []).forEach(nextLinkId => {
+                    results.push(...collectComboOptionsFromLink(app, targetGraph, nextLinkId, visited));
+                });
+            });
+            return results;
+        }
+
+        function resolveComboOptionsFromConnection(controlKey) {
+            const app = window.parent?.comfyApp;
+            const graph = app?.graph;
+            const builderNode = graph?.getNodeById(nodeId);
+            if (!app || !graph || !builderNode) {
+                return { error: 'AppBuilder graph is unavailable.' };
+            }
+
+            const unpackers = [];
+            (builderNode.outputs || []).forEach(output => {
+                (output.links || []).forEach(linkId => {
+                    const link = graph.links?.[linkId];
+                    const target = link ? graph.getNodeById(link.target_id) : null;
+                    if (target?.type === 'ParametersUnpacker' && !unpackers.includes(target)) unpackers.push(target);
+                });
+            });
+            if (unpackers.length === 0) {
+                return { error: 'Connect AppBuilderAdv to Parameters Unpacker first.' };
+            }
+
+            const resolvedSources = [];
+            let foundOutput = false;
+            let foundConnection = false;
+            unpackers.forEach(unpacker => {
+                const outputIndex = (unpacker.outputs || []).findIndex(output => output.name === controlKey);
+                if (outputIndex < 0) return;
+                foundOutput = true;
+                const output = unpacker.outputs[outputIndex];
+                (output.links || []).forEach(linkId => {
+                    const link = graph.links?.[linkId];
+                    if (!link) return;
+                    foundConnection = true;
+                    resolvedSources.push(...collectComboOptionsFromLink(app, graph, linkId));
+                });
+            });
+
+            if (!foundOutput) {
+                return { error: `Output “${controlKey}” is not available yet. Save the control, connect it, then reopen Configure Panel.` };
+            }
+            if (!foundConnection) {
+                return { error: `Connect the “${controlKey}” output of Parameters Unpacker to a COMBO input.` };
+            }
+            if (resolvedSources.length === 0) {
+                return { error: 'The connected input does not expose a fixed list of options.' };
+            }
+
+            const firstValues = resolvedSources[0].values;
+            const hasConflict = resolvedSources.some(source => JSON.stringify(source.values) !== JSON.stringify(firstValues));
+            if (hasConflict) {
+                return { error: 'This output is connected to inputs with different option lists.' };
+            }
+            return {
+                values: firstValues,
+                source: resolvedSources.map(source => source.source).filter((value, index, list) => list.indexOf(value) === index).join(', ')
+            };
+        }
+
+        function updateComboAutoUi(card) {
+            const autoInput = card.querySelector('.input-combo-auto');
+            const valuesInput = card.querySelector('.input-values');
+            const refreshButton = card.querySelector('.btn-combo-refresh');
+            const status = card.querySelector('.combo-source-status');
+            const isAuto = autoInput?.checked === true;
+            if (valuesInput) {
+                valuesInput.readOnly = isAuto;
+                valuesInput.classList.toggle('connection-managed', isAuto);
+            }
+            if (refreshButton) refreshButton.disabled = !isAuto;
+            if (!isAuto && status) {
+                status.className = 'combo-source-status';
+                status.innerText = 'Manual option list';
+            }
+        }
+
+        function refreshComboOptionsForCard(card) {
+            const status = card.querySelector('.combo-source-status');
+            const valuesInput = card.querySelector('.input-values');
+            const defaultInput = card.querySelector('.input-default');
+            const key = card.querySelector('.input-key')?.value.trim();
+            if (!key || !status || !valuesInput) return false;
+
+            const result = resolveComboOptionsFromConnection(key);
+            if (result.error) {
+                status.className = 'combo-source-status error';
+                status.innerText = result.error;
+                return false;
+            }
+            valuesInput.value = result.values.join('\n');
+            if (defaultInput && !result.values.includes(defaultInput.value)) {
+                defaultInput.value = result.values[0] || '';
+            }
+            status.className = 'combo-source-status success';
+            status.innerText = `${result.values.length} options · ${result.source}`;
+            return true;
+        }
+
+        function handleComboAutoToggle(input) {
+            const card = input.closest('.config-card');
+            if (!card) return;
+            updateComboAutoUi(card);
+            if (input.checked) refreshComboOptionsForCard(card);
+        }
+
+        function refreshComboOptions(button) {
+            const card = button.closest('.config-card');
+            if (card) refreshComboOptionsForCard(card);
+        }
 
         window.addEventListener('DOMContentLoaded', async () => {
             await loadI18n();
@@ -409,6 +730,23 @@
                         <input type="text" class="input-tooltip" value="${item.params.tooltip || ''}" placeholder="e.g. Seeds for generation">
                     </div>
                     `;
+
+                    if (type !== "BUTTON") {
+                        grid.innerHTML += `
+                        <div class="form-item">
+                            <label>${t('control_group_id', 'Visual Group ID')}</label>
+                            <input type="text" class="input-group-id" value="${item.params.group_id || ''}" placeholder="e.g. sampler">
+                            <span class="hotkey-hint">${t('control_group_id_hint', 'Adjacent controls with the same ID share one subtle frame')}</span>
+                        </div>
+                        <div class="form-item" style="grid-column: 1 / -1; flex-direction:row; align-items:center; gap:9px; padding:8px 10px; border:1px solid var(--border); border-radius:7px; background:#181818;">
+                            <input type="checkbox" class="input-additional" ${item.params.additional === true ? 'checked' : ''}>
+                            <div style="display:flex; flex-direction:column; gap:2px;">
+                                <label style="color:#ddd; font-size:12px; font-weight:bold;">${t('additional_control', 'Additional control')}</label>
+                                <span class="hotkey-hint">${t('additional_control_hint', 'Move this parameter into the shared collapsed section at the bottom of AppView')}</span>
+                            </div>
+                        </div>
+                        `;
+                    }
                 }
 
                 if (type === "INT" || type === "FLOAT") {
@@ -444,6 +782,15 @@
                                 <input type="number" class="input-precision" value="${item.params.precision ?? 3}" min="0" max="10">
                             </div>
                         `;
+                    } else {
+                        const hotkey = item.params.hotkey || '';
+                        grid.innerHTML += `
+                            <div class="form-item">
+                                <label>${t('hotkey_increment', 'Hotkey — increment')}</label>
+                                <input type="text" class="input-hotkey hotkey-capture" data-hotkey="${hotkey}" value="${formatHotkey(hotkey)}" placeholder="${t('hotkey_press', 'Click and press shortcut')}" readonly>
+                                <span class="hotkey-hint">${t('hotkey_clear_hint', 'Backspace/Delete clears the shortcut')}</span>
+                            </div>
+                        `;
                     }
                 }
                 else if (type === "STRING") {
@@ -464,10 +811,19 @@
                 }
                 else if (type === "COMBO") {
                     const valuesStr = Array.isArray(item.params.values) ? item.params.values.join('\n') : (item.params.values || "Option1\nOption2");
+                    const valuesFromConnection = item.params.values_from_connection === true;
                     grid.innerHTML += `
+                        <div class="combo-auto-row">
+                            <input type="checkbox" class="input-combo-auto" ${valuesFromConnection ? 'checked' : ''} onchange="handleComboAutoToggle(this)">
+                            <div class="combo-auto-copy">
+                                <label style="color:#ddd; font-size:12px; font-weight:bold;">${t('combo_auto_connection', 'Auto from connection')}</label>
+                                <span class="combo-source-status">${valuesFromConnection ? t('combo_source_checking', 'Checking connected input…') : t('combo_source_manual', 'Manual option list')}</span>
+                            </div>
+                            <button type="button" class="btn-combo-refresh" onclick="refreshComboOptions(this)" ${valuesFromConnection ? '' : 'disabled'}>${t('combo_refresh', '↻ Refresh')}</button>
+                        </div>
                         <div class="form-item">
                             <label>${t('combo_options', 'Dropdown Options (One per line)')}</label>
-                            <textarea class="input-values" style="height:60px; resize:none;">${valuesStr}</textarea>
+                            <textarea class="input-values${valuesFromConnection ? ' connection-managed' : ''}" style="height:90px; resize:none;" ${valuesFromConnection ? 'readonly' : ''}>${valuesStr}</textarea>
                         </div>
                         <div class="form-item">
                             <label>${t('combo_default', 'Default Choice')}</label>
@@ -488,10 +844,16 @@
                     `;
                 }
                 else if (type === "BOOLEAN") {
+                    const hotkey = item.params.hotkey || '';
                     grid.innerHTML += `
                         <div class="form-item" style="flex-direction:row; align-items:center; gap:8px;">
                             <input type="checkbox" class="input-default" ${item.params.default ?? true ? 'checked' : ''}>
                             <label style="margin-top:4px;">${t('default_toggle', 'Default State')}</label>
+                        </div>
+                        <div class="form-item">
+                            <label>${t('hotkey_toggle', 'Hotkey — toggle')}</label>
+                            <input type="text" class="input-hotkey hotkey-capture" data-hotkey="${hotkey}" value="${formatHotkey(hotkey)}" placeholder="${t('hotkey_press', 'Click and press shortcut')}" readonly>
+                            <span class="hotkey-hint">${t('hotkey_clear_hint', 'Backspace/Delete clears the shortcut')}</span>
                         </div>
                     `;
                 }
@@ -554,6 +916,17 @@
                         </div>
                     `;
                 }
+                else if (type === "TEXT_OUTPUT") {
+                    grid.innerHTML += `
+                        <div class="form-item">
+                            <label>Source Text Output Node</label>
+                            <select class="input-node-id">${getTextOutputNodeOptions(item.params.node_id)}</select>
+                        </div>
+                        <div class="form-item" style="grid-column: 2 / 4;">
+                            <label style="margin-top:4px;">Connect LLM → AppBuilder Text Output → CLIP, then select that Text Output node here.</label>
+                        </div>
+                    `;
+                }
                 else if (type === "PREVIEWER") {
                     grid.innerHTML += `
                         <div class="form-item" style="grid-column: 1 / -1;">
@@ -565,7 +938,14 @@
                 }
 
                 card.appendChild(grid);
+                card.querySelectorAll('.hotkey-capture').forEach(setupHotkeyCapture);
                 container.appendChild(card);
+                if (type === "COMBO") {
+                    updateComboAutoUi(card);
+                    if (item.params.values_from_connection === true) {
+                        requestAnimationFrame(() => refreshComboOptionsForCard(card));
+                    }
+                }
             });
         }
 
@@ -593,7 +973,9 @@
             const defaultParams = {
                 type: type,
                 name: key.toUpperCase(),
-                tooltip: ""
+                tooltip: "",
+                group_id: "",
+                additional: false
             };
 
             if (type === "INT") {
@@ -606,6 +988,7 @@
                 defaultParams.default = ""; defaultParams.multiline = false; defaultParams.placeholder = "";
             } else if (type === "COMBO") {
                 defaultParams.values = ["Option1", "Option2"];
+                defaultParams.values_from_connection = false;
             } else if (type === "FILELIST") {
                 defaultParams.folder = "checkpoints";
             } else if (type === "BOOLEAN") {
@@ -619,6 +1002,9 @@
             } else if (type === "LORA_STACK") { // 👇【给 LORA_STACK 设定默认值】
                 defaultParams.default = '[{"lora_name":"None","strength":1.0,"enabled":true}]';
                 defaultParams.folder = "loras";
+            } else if (type === "TEXT_OUTPUT") {
+                defaultParams.name = "Generated prompt";
+                defaultParams.node_id = "";
             } else if (type === "PREVIEWER") {
                 defaultParams.name = "LIVE PREVIEW";
             }
@@ -676,6 +1062,12 @@
                 params.type = type;
                 params.name = nameInput ? nameInput.value.trim() : "";
                 params.tooltip = tooltipInput ? tooltipInput.value.trim() : "";
+                const groupId = card.querySelector('.input-group-id')?.value.trim() || '';
+                if (groupId) params.group_id = groupId;
+                else delete params.group_id;
+                const additionalInput = card.querySelector('.input-additional');
+                if (additionalInput?.checked) params.additional = true;
+                else delete params.additional;
 
                 if (type === "INT" || type === "FLOAT") {
                     params.min = Number(card.querySelector('.input-min')?.value || 0);
@@ -685,6 +1077,9 @@
                     params.display = card.querySelector('.input-display')?.value || "number";
                     if (type === "FLOAT") {
                         params.precision = Number(card.querySelector('.input-precision')?.value || 3);
+                    } else {
+                        const hotkey = card.querySelector('.input-hotkey')?.dataset.hotkey || '';
+                        if (hotkey) params.hotkey = hotkey; else delete params.hotkey;
                     }
                 } else if (type === "SEED") {
                     params.default = Number(card.querySelector('.input-default')?.value || 0);
@@ -696,11 +1091,15 @@
                     const vals = card.querySelector('.input-values')?.value || "";
                     params.values = vals.split('\n').map(v => v.trim()).filter(v => v);
                     params.default = card.querySelector('.input-default')?.value?.trim() || undefined;
+                    if (card.querySelector('.input-combo-auto')?.checked) params.values_from_connection = true;
+                    else delete params.values_from_connection;
                 } else if (type === "FILELIST") {
                     params.folder = card.querySelector('.input-folder')?.value?.trim() || undefined;
                     params.default = card.querySelector('.input-default')?.value?.trim() || undefined;
                 } else if (type === "BOOLEAN") {
                     params.default = card.querySelector('.input-default')?.checked ?? true;
+                    const hotkey = card.querySelector('.input-hotkey')?.dataset.hotkey || '';
+                    if (hotkey) params.hotkey = hotkey; else delete params.hotkey;
                 } else if (type === "BUTTON") {
                     params.action = card.querySelector('.input-action')?.value || "run";
                 } else if (type === "BYPASSER") {
@@ -721,6 +1120,8 @@
                     params.media = card.querySelector('.input-media')?.value || "image";
                 } else if (type === "LORA_STACK") { // 👇【打包时获取固定数据】
                     params.folder = "loras";
+                } else if (type === "TEXT_OUTPUT") {
+                    params.node_id = card.querySelector('.input-node-id')?.value?.trim() || "";
                 }
 
                 return { key, type, params };

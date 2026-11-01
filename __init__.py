@@ -186,6 +186,11 @@ class AppBuilderLoraStack:
         for lora_info in loras:
             if not isinstance(lora_info, dict):
                 continue
+
+            # Visual separators are stored alongside LoRAs so their order can
+            # be restored by the AppBuilder UI, but they do not affect loading.
+            if lora_info.get("type") == "separator":
+                continue
             
             # 1. 过滤未开启的 Lora
             if not lora_info.get("enabled", True):
@@ -602,12 +607,49 @@ async def system_stats(request):
         "devices": device_entries
     })
 
+
+class AppBuilderTextOutput:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "text": ("STRING", {"forceInput": True}),
+            },
+            "hidden": {
+                "unique_id": "UNIQUE_ID",
+            },
+        }
+
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("text",)
+    FUNCTION = "emit_text"
+    CATEGORY = "AppBuilder"
+    OUTPUT_NODE = True
+    DESCRIPTION = "Displays generated text in AppView and passes it through unchanged."
+
+    @classmethod
+    def IS_CHANGED(cls, **kwargs):
+        # Output UI data must be emitted for every queued generation, including cached inputs.
+        return float("nan")
+
+    def emit_text(self, text, unique_id=None):
+        value = text if isinstance(text, str) else str(text)
+        return {
+            "ui": {
+                "appbuilder_text": [value],
+                "appbuilder_node_id": [str(unique_id)] if unique_id is not None else [],
+            },
+            "result": (value,),
+        }
+
+
 NODE_CLASS_MAPPINGS = {
     "AppBuilder": AppBuilder,
     "AppBuilderBypasser": AppBuilderBypasser,
     "AppBuilderAdv": AppBuilderAdv,
     "ParametersUnpacker": ParametersUnpacker,
     "AppBuilderLoraStack": AppBuilderLoraStack,
+    "AppBuilderTextOutput": AppBuilderTextOutput,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -616,6 +658,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "AppBuilderAdv": "AppBuilder (Advanced)",
     "ParametersUnpacker": "Parameters Unpacker",
     "AppBuilderLoraStack": "AppBuilder Lora Stack",
+    "AppBuilderTextOutput": "AppBuilder Text Output",
 }
 
 WEB_DIRECTORY = "./web"
@@ -625,14 +668,14 @@ CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 async def serve_app_manager(request):
     html_path = os.path.join(CURRENT_DIR, "web", "app_manager.html")
     if os.path.exists(html_path):
-        return web.FileResponse(html_path)
+        return web.FileResponse(html_path, headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"})
     return web.Response(status=404, text="app_manager.html not found")
 
 @PromptServer.instance.routes.get("/app_view.html")
 async def serve_app_view(request):
     html_path = os.path.join(CURRENT_DIR, "web", "app_view.html")
     if os.path.exists(html_path):
-        return web.FileResponse(html_path)
+        return web.FileResponse(html_path, headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"})
     return web.Response(status=404, text="app_view.html not found")
 
 @PromptServer.instance.routes.get("/i18n/{filename}")

@@ -136,8 +136,61 @@
         }
         
         #main-preview { 
-            max-width: 100%; max-height: 100%; object-fit: contain; 
+            width: 100%; height: 100%; max-width: 100%; max-height: 100%; object-fit: contain;
             pointer-events: none; user-select: none; -webkit-user-drag: none; 
+        }
+
+        .preview-results {
+            display: none; width: 100%; height: 100%; min-width: 0; min-height: 0;
+            position: relative; overflow: hidden;
+        }
+        .preview-results.visible { display: block; }
+        .preview-results-grid {
+            width: 100%; height: 100%; display: grid; gap: 8px; overflow: hidden;
+        }
+        .preview-result-tile {
+            min-width: 0; min-height: 0; width: 100%; height: 100%; padding: 4px;
+            border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+            background: var(--bg-color); cursor: zoom-in;
+        }
+        .preview-result-tile:hover { border-color: var(--primary); }
+        .preview-result-tile img, .preview-result-tile video {
+            display: block; width: 100%; height: 100%; object-fit: contain;
+            pointer-events: none; user-select: none; -webkit-user-drag: none;
+        }
+        .preview-results-focus {
+            display: none; position: absolute; inset: 0; align-items: center; justify-content: center;
+            overflow: hidden; background: var(--bg);
+        }
+        .preview-results-focus.visible { display: flex; }
+        .preview-results-media {
+            width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+        }
+        .preview-results-media img, .preview-results-media video {
+            display: block; width: 100%; height: 100%; object-fit: contain;
+            user-select: none; -webkit-user-drag: none;
+        }
+        .preview-nav-btn, .preview-grid-btn {
+            position: absolute; z-index: 30; display: flex; align-items: center; justify-content: center;
+            border: 1px solid rgba(255,255,255,0.35); color: #fff;
+            background: rgba(0,0,0,0.55); cursor: pointer; backdrop-filter: blur(6px);
+        }
+        .preview-nav-btn:hover, .preview-grid-btn:hover { background: var(--primary); }
+        .preview-nav-btn {
+            top: 50%; transform: translateY(-50%); width: 42px; height: 58px;
+            border-radius: 10px; font-size: 30px; line-height: 1;
+        }
+        .preview-nav-btn:disabled { display: none; }
+        #preview-result-prev { left: 10px; }
+        #preview-result-next { right: 10px; }
+        .preview-grid-btn {
+            top: 8px; right: 8px; width: 38px; height: 38px; border-radius: 9px; font-size: 20px;
+        }
+        .preview-result-counter {
+            position: absolute; z-index: 30; left: 50%; bottom: 8px; transform: translateX(-50%);
+            padding: 5px 10px; border-radius: 12px; color: #fff; background: rgba(0,0,0,0.55);
+            font-size: 12px; pointer-events: none; backdrop-filter: blur(6px);
         }
 
         .gallery-container { 
@@ -217,6 +270,31 @@
         }
         .controls-section::-webkit-scrollbar { display: none; }
         .control-group { margin-bottom: 8px;}
+        .control-visual-group {
+            margin: 1px 0 8px; padding: 6px 7px 0; border: 1px solid var(--border);
+            border-radius: 9px; background: transparent;
+        }
+        .control-visual-group > .control-group:last-child { margin-bottom: 6px; }
+
+        .additional-controls {
+            margin: 12px 0 8px; border: 1px solid var(--border); border-radius: 10px;
+            background: var(--panel-bg); overflow: hidden;
+        }
+        .additional-controls > summary {
+            min-height: 42px; padding: 9px 12px; display: flex; align-items: center; gap: 8px;
+            color: var(--title); font-size: 12px; font-weight: bold; cursor: pointer;
+            user-select: none; list-style: none;
+        }
+        .additional-controls > summary::-webkit-details-marker { display: none; }
+        .additional-controls > summary:hover { color: var(--text); background: var(--border); }
+        .additional-controls-title { flex: 1; }
+        .additional-controls-count {
+            min-width: 22px; height: 22px; padding: 0 6px; display: inline-flex; align-items: center; justify-content: center;
+            border-radius: 11px; background: var(--border); color: var(--text); font: 600 11px/1 monospace;
+        }
+        .additional-controls-chevron { font-size: 12px; transition: transform 0.18s ease; }
+        .additional-controls[open] .additional-controls-chevron { transform: rotate(180deg); }
+        .additional-controls-body { padding: 8px 10px 2px; border-top: 1px solid var(--border); }
         
         .control-group label.control-title {
             display: flex;                  
@@ -262,11 +340,24 @@
         }
 
         textarea.tight-textarea {
-            height: 36px; width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border);
+            width: 100%; min-height: 82px; max-height: 360px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border);
             background: var(--panel-bg); color: var(--text); font-size: 14px; font-family: monospace;
-            resize: none; white-space: pre-wrap; line-height: 18px; overflow-y: hidden;
+            resize: vertical; white-space: pre-wrap; line-height: 18px; overflow-y: auto;
         }
         textarea.tight-textarea:focus { outline: none; border-color: var(--primary); }
+
+        .workflow-text-output {
+            position: relative; width: 100%; min-height: 96px; max-height: 320px; overflow: auto;
+            padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
+            background: var(--bg); color: var(--text);
+        }
+        .workflow-text-output.empty { color: var(--title); display: flex; align-items: center; justify-content: center; text-align: center; }
+        .workflow-text-output-text {
+            margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font: 13px/1.45 monospace; color: inherit;
+        }
+        .workflow-text-output-status {
+            display: block; margin-top: 6px; color: var(--title); font-size: 10px; text-align: right;
+        }
 
         input[type="range"] {
             -webkit-appearance: none;
@@ -362,6 +453,27 @@
         /* 📦 容器与 4-in-1 无缝胶囊行 */
         .lora-stack-container { display: flex; flex-direction: column; gap: 6px; width: 100%; }
         .lora-row { display: flex; gap: 0px; align-items: center; width: 100%; }
+        .lora-list-item { position: relative; }
+        .lora-list-item.dragging { opacity: 0.45; }
+        .lora-list-item.drag-target::before {
+            content: ''; position: absolute; z-index: 5; left: 0; right: 0; top: -4px; height: 2px;
+            border-radius: 2px; background: var(--primary); pointer-events: none;
+        }
+        .lora-drag-handle {
+            width: 2rem; height: 36px; margin-right: 6px; flex-shrink: 0; border: 1px solid var(--border);
+            border-radius: 8px; background: var(--panel-bg); color: var(--title); cursor: grab;
+            display: flex; align-items: center; justify-content: center; font-size: 16px; user-select: none;
+        }
+        .lora-drag-handle:hover { background: var(--border); color: var(--text); }
+        .lora-drag-handle:active { cursor: grabbing; }
+        .lora-stack-container:not(.editing) .lora-drag-handle,
+        .lora-stack-container:not(.editing) .btn-del-lora { display: none; }
+        .lora-stack-container:not(.editing) .lora-picker-button {
+            border-left: 1px solid var(--border) !important;
+            border-radius: 8px 0 0 8px !important;
+            padding-right: 9px;
+            cursor: default;
+        }
         
         /* 1. 🗑️ 无缝吸附在最左侧的删除按钮 */
         .btn-del-lora {
@@ -373,23 +485,63 @@
         }
         .btn-del-lora:hover { background: var(--border); color: var(--red); }
         
-        /* 2. 中间的 LoRA 下拉框 (左右均无缝无圆角) */
-        .lora-row select {
-            flex: 3; min-width: 0; height: 36px; font-size: 0.8rem;
-            padding-right: 6px !important;
-            border-radius: 0px !important; text-overflow: ellipsis !important; /* 超长自动省略号 */
-            white-space: nowrap !important; overflow: hidden !important;
+        /* 2. Folder-aware LoRA picker */
+        .lora-picker { position: relative; flex: 3; min-width: 0; height: 36px; }
+        .lora-picker-button {
+            width: 100%; min-width: 0; height: 36px; padding: 0 26px 0 9px;
+            border: 1px solid var(--border); border-radius: 0; background: var(--panel-bg); color: var(--text);
+            font: 0.8rem/1.2 monospace; text-align: left; cursor: pointer;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: relative;
         }
+        .lora-stack-container.editing .lora-picker-button::after {
+            content: '▾'; position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+            color: var(--title); font-size: 11px;
+        }
+        .lora-stack-container.editing .lora-picker-button:hover,
+        .lora-picker.open .lora-picker-button { background: var(--border); }
+        .lora-tree-menu {
+            display: none; position: absolute; z-index: 120; left: 0; top: calc(100% + 4px);
+            width: max(100%, 280px); max-width: min(420px, calc(100vw - 32px)); max-height: 360px;
+            padding: 6px; overflow: auto; overscroll-behavior: contain; scrollbar-gutter: stable;
+            border: 1px solid var(--border); border-radius: 9px; background: var(--bg);
+            box-shadow: 0 10px 28px rgba(0,0,0,0.35);
+        }
+        .lora-picker.open .lora-tree-menu { display: block; }
+        .lora-tree-folder { margin: 1px 0; }
+        .lora-tree-folder > summary {
+            min-height: 30px; padding: 6px 8px; border-radius: 6px; color: var(--title);
+            font: 600 12px/1.35 monospace; cursor: pointer; user-select: none;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .lora-tree-folder > summary:hover { background: var(--panel-bg); color: var(--text); }
+        .lora-tree-children { margin-left: 12px; padding-left: 7px; border-left: 1px solid var(--border); }
+        .lora-tree-file {
+            display: block; width: 100%; min-height: 30px; padding: 6px 9px; border: none; border-radius: 6px;
+            background: transparent; color: var(--text); font: 12px/1.35 monospace; text-align: left;
+            cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .lora-tree-file:hover { background: var(--panel-bg); }
+        .lora-tree-file.active { color: #fff; background: var(--primary); }
         
-        /* 1. 强度输入框：恢复右侧圆角与右边框 */
-        .lora-row input[type="number"] {
-            width: 2.5rem; height: 36px; text-align: center;
+        /* 1. LoRA strength stepper: − / numeric value / + */
+        .lora-strength-control { display: flex; height: 36px; flex-shrink: 0; }
+        .lora-row input.lora-strength-input {
+            width: 3.25rem; height: 36px; text-align: center;
             padding-left: 2px !important; padding-right: 2px !important;
-            border-radius: 0px !important; 
-            border-radius: 0px 8px 8px 0px !important;
-            border-right: 1px solid var(--border) !important; /* 👈 恢复右边框 */
+            border-radius: 0 !important;
+            border-right: 1px solid var(--border) !important;
             border-left: none !important;
         }
+        .lora-strength-btn {
+            width: 2rem; height: 36px; padding: 0; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            border: 1px solid var(--border); border-left: none; border-radius: 0;
+            background: var(--panel-bg); color: var(--title); font-size: 18px; font-weight: bold;
+            cursor: pointer; user-select: none;
+        }
+        .lora-strength-btn:hover { background: var(--border); }
+        .lora-strength-btn:active { background: var(--primary); color: #fff; }
+        .lora-strength-btn:last-child { border-radius: 0 8px 8px 0; }
         
         /* 2. 独立开关：恢复四周独立圆角，并向左拉开 6px 的隔离带 */
         .lora-row .toggle-switch {
@@ -401,6 +553,7 @@
         .lora-stack-header {
             display: flex; justify-content: space-between; align-items: center;
         }
+        .lora-stack-actions { display: flex; align-items: center; gap: 6px; }
         
         /* + Add LoRA 按钮 */
         .btn-add-lora {
@@ -409,6 +562,16 @@
             font-size: 12px; font-weight: bold; cursor: pointer;
         }
         .btn-add-lora:hover { background-color: var(--border); }
+
+        .lora-divider-row {
+            width: 100%; min-height: 18px; display: flex; align-items: center; justify-content: center;
+        }
+        .lora-stack-container.editing .lora-divider-row { min-height: 36px; }
+        .lora-divider-content {
+            min-width: 0; flex: 1; height: 18px; display: flex; align-items: center; justify-content: center;
+        }
+        .lora-divider-line { width: 96px; max-width: 42%; height: 1px; flex: none; background: var(--border); }
+        .lora-stack-edit-btn.active { color: #fff; border-color: var(--primary); background: var(--primary); }
         
         /* 🎚️ 三段式总开关 (遵循相同的 36px 高度与滑块语言) */
         .tri-state-toggle {
@@ -429,12 +592,18 @@
         .tri-state-toggle.all-on { background-color: var(--primary); }
         .tri-state-toggle.all-on .tri-state-thumb { transform: translateX(18px);  }
 
-        .input-with-button { display: flex; gap: 6px; width: 100%; }
+        .input-with-button { display: flex; align-items: stretch; gap: 6px; width: 100%; }
         .btn-edit-multiline {
-            background: var(--panel-bg); border: 1px solid var(--border); border-radius: 8px; width: 2.5rem; height: 57px; 
+            background: var(--panel-bg); border: 1px solid var(--border); border-radius: 8px; width: 2.5rem; height: auto; min-height: 82px;
             flex-shrink: 0; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center;
         }
         .btn-edit-multiline:hover { background: var(--border); }
+        .btn-prompt-history {
+            background: var(--panel-bg); border: 1px solid var(--border); border-radius: 8px; width: 2.5rem; height: auto; min-height: 82px;
+            flex-shrink: 0; cursor: pointer; color: var(--title); display: flex; align-items: center; justify-content: center;
+        }
+        .btn-prompt-history:hover { background: var(--border); color: var(--text); }
+        .btn-prompt-history svg { width: 18px; height: 18px; pointer-events: none; }
         
         .input-with-button input, .input-with-button textarea { flex: 1; width: auto; }
         
@@ -524,6 +693,71 @@
         .modal-btn-cancel { background-color: var(--border); color: var(--text); }
         .modal-btn-save { background-color: var(--primary); color: #fff; }
 
+        .prompt-history-content {
+            max-width: 720px; height: 760px; min-height: 320px; max-height: calc(100vh - 32px); overflow: hidden;
+        }
+        .prompt-history-content > .modal-header,
+        .prompt-history-content > .prompt-history-toolbar,
+        .prompt-history-content > .modal-footer { flex: 0 0 auto; }
+        .prompt-history-list {
+            display: flex; flex: 1 1 auto; flex-direction: column; gap: 8px; min-height: 0; overflow-y: auto;
+            padding-right: 4px; overscroll-behavior: contain; scrollbar-gutter: stable;
+        }
+        .prompt-history-toolbar { display: flex; align-items: center; justify-content: flex-end; }
+        .prompt-history-filter {
+            display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px;
+            border: 1px solid var(--border); background: var(--bg); color: var(--title); cursor: pointer;
+            font-size: 12px; font-weight: bold;
+        }
+        .prompt-history-filter:hover { background: var(--border); color: var(--text); }
+        .prompt-history-filter.active { color: #f5b942; border-color: #f5b942; background: rgba(245, 185, 66, 0.1); }
+        .prompt-history-empty {
+            min-height: 120px; display: flex; align-items: center; justify-content: center; text-align: center;
+            color: var(--title); border: 1px dashed var(--border); border-radius: 8px; padding: 20px;
+        }
+        .prompt-history-item {
+            width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) 42px;
+            flex: none; min-height: 82px; padding: 0;
+            border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text);
+            overflow: hidden;
+        }
+        .prompt-history-item:hover { border-color: var(--primary); background: var(--panel-bg); }
+        .prompt-history-item-main {
+            width: 100%; min-width: 0; min-height: 80px; display: flex; flex-direction: column;
+            justify-content: space-between; gap: 7px; padding: 10px 12px;
+            border: none; background: transparent; color: inherit; text-align: left; cursor: pointer; font-family: inherit;
+        }
+        .prompt-history-item-text {
+            display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden;
+            white-space: pre-wrap; overflow-wrap: anywhere; font-family: monospace; font-size: 13px; line-height: 1.4;
+        }
+        .prompt-history-item-date { color: var(--title); font-size: 11px; }
+        .prompt-history-item-actions {
+            width: 42px; min-height: 80px; display: grid; grid-template-rows: 1fr 1fr;
+            border-left: 1px solid var(--border);
+        }
+        .prompt-history-action {
+            width: 100%; min-width: 0; min-height: 40px; border: none; background: transparent; color: var(--title);
+            cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 19px;
+        }
+        .prompt-history-action + .prompt-history-action { border-top: 1px solid var(--border); }
+        .prompt-history-action:hover { background: var(--border); color: var(--text); }
+        .prompt-history-favorite.active { color: #f5b942; }
+        .prompt-history-delete:hover { color: var(--red); }
+        .prompt-history-delete svg { width: 17px; height: 17px; pointer-events: none; }
+
+        /* Keep the history layout deterministic even when browser form/flex defaults differ. */
+        #prompt-history-modal .prompt-history-content {
+            height: 760px !important; min-height: 320px !important;
+            max-height: calc(100vh - 32px) !important; overflow: hidden !important;
+        }
+        #prompt-history-list > .prompt-history-item {
+            display: grid !important; grid-template-columns: minmax(0, 1fr) 42px !important;
+            flex: none !important; height: auto !important; min-height: 82px !important;
+        }
+        #prompt-history-list .prompt-history-item-main { height: auto !important; min-height: 80px !important; }
+        #prompt-history-list .prompt-history-item-actions { min-height: 80px !important; }
+
         .lightbox-modal {
             display: none; position: fixed; z-index: 11000; left: 0; top: 0; width: 100%; height: 100%;
             background-color: rgba(0,0,0,0.8); justify-content: center; align-items: center;
@@ -560,6 +794,59 @@
         .lightbox-close:hover { background: var(--red) !important; }
         .lightbox-download { top: calc(100% - 30px); right: 10px; user-select: none; z-index: 11300 !important; padding-bottom: 2px; }
         .lightbox-download:hover { background: var(--primary) !important; }
+        .lightbox-metadata {
+            position: absolute; left: 10px; bottom: 10px; z-index: 11300;
+            max-width: min(70dvw, 680px); padding: 8px 11px; border-radius: 9px;
+            background: rgba(0,0,0,0.62); color: #fff; backdrop-filter: blur(8px);
+            font-size: 12px; line-height: 1.35; user-select: text; -webkit-user-select: text;
+        }
+        .lightbox-metadata-name {
+            max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            font-weight: bold; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        }
+        .lightbox-metadata-details { color: #c8c8c8; margin-top: 2px; font-variant-numeric: tabular-nums; }
+        .lightbox-params-toggle {
+            position: absolute; right: 70px; bottom: 10px; z-index: 11300; min-height: 40px;
+            padding: 0 13px; border: 1px solid rgba(255,255,255,0.28); border-radius: 20px;
+            background: rgba(0,0,0,0.62); color: #fff; font-size: 12px; font-weight: bold;
+            cursor: pointer; backdrop-filter: blur(8px);
+        }
+        .lightbox-params-toggle:hover:not(:disabled) { background: var(--primary); }
+        .lightbox-params-toggle:disabled { opacity: 0.45; cursor: default; }
+        .lightbox-params-panel {
+            display: none; position: absolute; right: 10px; bottom: 64px; z-index: 11400;
+            width: min(390px, calc(100dvw - 20px)); max-height: min(70dvh, 620px);
+            padding: 12px; border: 1px solid rgba(255,255,255,0.2); border-radius: 12px;
+            background: rgba(15,15,15,0.94); color: #fff; backdrop-filter: blur(12px);
+            box-shadow: 0 10px 35px rgba(0,0,0,0.55); flex-direction: column; gap: 9px;
+        }
+        .lightbox-params-panel.visible { display: flex; }
+        .lightbox-params-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .lightbox-params-title { font-size: 13px; font-weight: bold; }
+        .lightbox-params-close {
+            border: none; background: transparent; color: #aaa; font-size: 22px; line-height: 1;
+            cursor: pointer; padding: 0 3px;
+        }
+        .lightbox-params-list { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; min-height: 0; }
+        .lightbox-param-row { padding: 7px 8px; border: 1px solid #333; border-radius: 7px; background: #111; }
+        .lightbox-param-name { color: #999; font-size: 10px; margin-bottom: 3px; }
+        .lightbox-param-value {
+            color: #eee; font-size: 12px; line-height: 1.35; white-space: pre-wrap;
+            overflow-wrap: anywhere; max-height: 120px; overflow-y: auto;
+        }
+        .lightbox-params-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .lightbox-params-date { color: #777; font-size: 10px; }
+        .lightbox-restore-btn {
+            border: none; border-radius: 7px; padding: 8px 12px; background: var(--primary);
+            color: #fff; font-size: 12px; font-weight: bold; cursor: pointer;
+        }
+        .lightbox-restore-btn:hover { filter: brightness(1.15); }
+        .lightbox-restore-btn:disabled { opacity: 0.45; cursor: default; }
+        .gallery-item-unavailable {
+            width: 72px; height: 72px; flex-shrink: 0; padding: 6px; border: 1px dashed var(--border);
+            border-radius: 7px; background: var(--panel-bg); color: #888; font-size: 10px;
+            line-height: 1.2; cursor: pointer; overflow: hidden; overflow-wrap: anywhere;
+        }
         
         .number-input::-webkit-outer-spin-button, .number-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .number-input[type=number] { -moz-appearance: textfield; }
@@ -634,6 +921,35 @@
             background-color: var(--panel-bg); color: var(--title); font-size: 12px; font-weight: bold;
             height: 100%; padding: 0 10px; line-height: 27px; text-align: center;
             flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .generation-time-badge {
+            display: none; flex-shrink: 0; height: 100%; padding: 0 9px; line-height: 27px;
+            background-color: var(--panel-bg); color: var(--title); font-size: 12px; font-weight: bold;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-variant-numeric: tabular-nums; cursor: pointer; user-select: none;
+        }
+        .generation-time-badge:hover, .generation-time-badge:focus-visible { background-color: var(--border); }
+        .generation-profile-content { max-width: 720px; max-height: min(82dvh, 760px); }
+        .generation-profile-summary {
+            display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 9px 11px;
+            border: 1px solid var(--border); border-radius: 8px; background: var(--bg);
+            color: var(--text); font-size: 12px; font-variant-numeric: tabular-nums;
+        }
+        .generation-profile-note { color: #777; font-size: 10px; line-height: 1.35; }
+        .generation-profile-list { display: flex; flex-direction: column; gap: 5px; overflow-y: auto; min-height: 0; }
+        .generation-profile-empty { color: #888; padding: 20px 8px; text-align: center; }
+        .generation-profile-row {
+            display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; gap: 9px; align-items: center;
+            padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg);
+            color: var(--text); font-size: 12px;
+        }
+        .generation-profile-order { color: #777; text-align: right; font-family: monospace; }
+        .generation-profile-node { min-width: 0; }
+        .generation-profile-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: bold; }
+        .generation-profile-id { margin-top: 2px; color: #777; font-size: 10px; font-family: monospace; }
+        .generation-profile-duration {
+            color: var(--title); font-weight: bold; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-variant-numeric: tabular-nums;
         }
         
         /* 1. 当鼠标/焦点不在输入框内时：开启左侧省略号黑科技 */
@@ -923,6 +1239,7 @@
                     </div>
                     <div class="header-status-group">
                         <span class="header-status-badge" id="status-text" data-i18n="label_ready">Ready</span>
+                        <span class="generation-time-badge" id="generation-time" title="Generation time" role="button" tabindex="0" aria-label="Open node timing details">0.0s</span>
                         <button class="monitor-btn header-btn" id="monitor-toggle-btn" title="Toggle System Monitor">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-activity-icon lucide-activity"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg>
                         </button>
@@ -930,6 +1247,16 @@
                 </div>
                 
                 <img id="main-preview" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100%' height='100%'><rect width='100%' height='100%' fill='%23555'/><text x='50%' y='50%' fill='%23999' font-size='16' text-anchor='middle' alignment-baseline='middle'>No Media</text></svg>">
+                <div id="preview-results" class="preview-results">
+                    <div id="preview-results-grid" class="preview-results-grid"></div>
+                    <div id="preview-results-focus" class="preview-results-focus">
+                        <div id="preview-results-media" class="preview-results-media"></div>
+                        <button id="preview-result-prev" class="preview-nav-btn" type="button" title="Previous result" aria-label="Previous result">&#8249;</button>
+                        <button id="preview-result-next" class="preview-nav-btn" type="button" title="Next result" aria-label="Next result">&#8250;</button>
+                        <button id="preview-results-back" class="preview-grid-btn" type="button" title="Show all results" aria-label="Show all results">&#8862;</button>
+                        <span id="preview-result-counter" class="preview-result-counter"></span>
+                    </div>
+                </div>
             </div>
             
             <div class="gallery-container" id="gallery">
@@ -951,7 +1278,7 @@
                     <input type="number" id="input-batch-count" class="number-input btn-batch-input" value="1" min="1" max="999">
                     <div class="btn-run-wrapper">
                         <span class="queue-badge" id="queue-badge"></span>
-                        <button class="btn btn-run" id="btn-run" data-i18n="button_run">▷ Run</button>
+                        <button class="btn btn-run" id="btn-run" data-i18n="button_run" title="Run (⌘/Ctrl + Enter)">▷ Run</button>
                     </div>
                     <button class="btn btn-stop" id="btn-stop" title-i18n="cancel_run" title="Cancel current run">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
@@ -978,8 +1305,36 @@
             <textarea id="multiline-textarea"></textarea>
             <div class="modal-footer">
                 <button class="modal-btn modal-btn-cancel" id="multiline-btn-cancel" data-i18n="label_cancel">Cancel</button>
-                <button class="modal-btn modal-btn-save" id="multiline-btn-save" data-i18n="label_save">Save</button>
+                <button class="modal-btn modal-btn-save" id="multiline-btn-save" data-i18n="label_save" title="Save (⌘/Ctrl + Enter)">Save</button>
             </div>
+        </div>
+    </div>
+
+    <div id="prompt-history-modal" class="modal">
+        <div class="modal-content prompt-history-content">
+            <div class="modal-header">
+                <span id="prompt-history-title">Prompt history</span>
+                <span class="modal-close" id="prompt-history-close">&times;</span>
+            </div>
+            <div class="prompt-history-toolbar">
+                <button class="prompt-history-filter" id="prompt-history-filter" type="button" aria-pressed="false">☆ Favorites only</button>
+            </div>
+            <div class="prompt-history-list" id="prompt-history-list"></div>
+            <div class="modal-footer">
+                <button class="modal-btn modal-btn-cancel" id="prompt-history-cancel" type="button">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="generation-profile-modal" class="modal">
+        <div class="modal-content generation-profile-content">
+            <div class="modal-header">
+                <span>Node execution timings</span>
+                <span class="modal-close" id="generation-profile-close">&times;</span>
+            </div>
+            <div class="generation-profile-summary" id="generation-profile-summary"></div>
+            <div class="generation-profile-note">Measured between ComfyUI execution events. Cached nodes are excluded.</div>
+            <div class="generation-profile-list" id="generation-profile-list"></div>
         </div>
     </div>
 
@@ -990,6 +1345,22 @@
         <a class="lightbox-arrow lightbox-download" id="lightbox-download" title="Download" target="_blank" download>
             <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download-icon lucide-download"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>
         </a>
+        <div class="lightbox-metadata" id="lightbox-metadata">
+            <div class="lightbox-metadata-name" id="lightbox-metadata-name"></div>
+            <div class="lightbox-metadata-details" id="lightbox-metadata-details"></div>
+        </div>
+        <button type="button" class="lightbox-params-toggle" id="lightbox-params-toggle" disabled>Parameters</button>
+        <div class="lightbox-params-panel" id="lightbox-params-panel">
+            <div class="lightbox-params-header">
+                <span class="lightbox-params-title">Generation parameters</span>
+                <button type="button" class="lightbox-params-close" id="lightbox-params-close" aria-label="Close parameters">&times;</button>
+            </div>
+            <div class="lightbox-params-list" id="lightbox-params-list"></div>
+            <div class="lightbox-params-footer">
+                <span class="lightbox-params-date" id="lightbox-params-date"></span>
+                <button type="button" class="lightbox-restore-btn" id="lightbox-restore-btn">Restore parameters</button>
+            </div>
+        </div>
         <button class="lightbox-arrow lightbox-arrow-left" id="lightbox-prev">
             <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-left-icon lucide-chevron-left"><path d="m15 18-6-6 6-6"/></svg>
         </button>
@@ -1143,7 +1514,10 @@
             }
 
             const slotValuesMap = {};
-            const uiEntries = Object.entries(config).filter(([k, p]) => p.type !== "BUTTON" && p.type !== "BYPASSER");
+            const uiEntries = Object.entries(config).filter(([k, p]) => {
+                const type = String(p.type || "STRING").toUpperCase();
+                return !["BUTTON", "BYPASSER", "TEXT_OUTPUT"].includes(type);
+            });
 
             uiEntries.forEach(([key, param], slotIdx) => {
                 let val = formValues[key] !== undefined ? formValues[key] : param.value;
@@ -1380,6 +1754,29 @@
         let activeInputEl = null;
         let currentLightboxIndex = 0;
         let currentImagesList = [];
+        let currentRunMediaUrls = [];
+        let previewFocusedIndex = -1;
+        let livePreviewObjectUrl = null;
+        let controlHotkeyBindings = [];
+        let generationStartedAt = null;
+        let generationTimerId = null;
+        let generationElapsedMs = 0;
+        let generationNodeProfile = [];
+        let activeGenerationNode = null;
+        let currentFormConfig = {};
+        let additionalControlsExpanded = false;
+        let generationHistory = { version: 1, media: {}, generations: {} };
+        let promptHistory = { version: 1, apps: {}, imported: {} };
+        let activePromptHistoryControl = null;
+        let promptHistoryFavoritesOnly = false;
+        const workflowTextOutputValues = new Map();
+        let queuedGenerationIds = [];
+        let activeGenerationId = null;
+        let latestGenerationId = null;
+        const generationIdByPromptId = new Map();
+        let lightboxMetadataRequestId = 0;
+        let currentLightboxMetadata = null;
+        const lightboxFileSizeCache = new Map();
         let logHeight = localStorage.getItem('appview_log_height') || 250;
         let isLogOpen = false;
         let galleryData = [];
@@ -1387,6 +1784,270 @@
             const historyStr = localStorage.getItem('appview_gallery_history');
             if (historyStr) { galleryData = JSON.parse(historyStr); if (!Array.isArray(galleryData)) galleryData = []; }
         } catch(e) { galleryData = []; }
+
+        try {
+            const generationHistoryStr = localStorage.getItem('appview_generation_history_v1');
+            if (generationHistoryStr) {
+                const parsed = JSON.parse(generationHistoryStr);
+                if (parsed && parsed.version === 1 && parsed.media && parsed.generations) generationHistory = parsed;
+            }
+        } catch(e) {
+            generationHistory = { version: 1, media: {}, generations: {} };
+        }
+
+        try {
+            const promptHistoryStr = localStorage.getItem('appview_prompt_history_v1');
+            if (promptHistoryStr) {
+                const parsed = JSON.parse(promptHistoryStr);
+                if (parsed && parsed.version === 1 && parsed.apps) {
+                    promptHistory = parsed;
+                    promptHistory.imported = promptHistory.imported || {};
+                }
+            }
+        } catch(e) {
+            promptHistory = { version: 1, apps: {}, imported: {} };
+        }
+
+        function cloneHistoryValue(value) {
+            try { return JSON.parse(JSON.stringify(value)); }
+            catch(e) { return value; }
+        }
+
+        function getCurrentAppHistoryId() {
+            return appFileName || (sourceNodeId ? `node_${sourceNodeId}` : 'appview');
+        }
+
+        function isPromptHistoryControl(params) {
+            return String(params?.type || 'STRING').toUpperCase() === 'STRING' && params?.multiline === true;
+        }
+
+        function persistPromptHistory() {
+            try {
+                localStorage.setItem('appview_prompt_history_v1', JSON.stringify(promptHistory));
+            } catch(e) {
+                console.warn('[AppBuilder] Could not persist prompt history:', e);
+            }
+        }
+
+        function getPromptHistoryEntries(controlKey) {
+            const appHistory = promptHistory.apps[getCurrentAppHistoryId()];
+            const entries = appHistory?.[controlKey];
+            return Array.isArray(entries) ? entries : [];
+        }
+
+        function limitPromptHistoryEntries(entries) {
+            let regularCount = 0;
+            return entries.filter(entry => {
+                if (entry?.favorite === true) return true;
+                regularCount++;
+                return regularCount <= 100;
+            });
+        }
+
+        function recordPromptHistory(formValues) {
+            const appId = getCurrentAppHistoryId();
+            let changed = false;
+            Object.entries(currentFormConfig || {}).forEach(([key, params]) => {
+                if (!isPromptHistoryControl(params) || !Object.prototype.hasOwnProperty.call(formValues, key)) return;
+                const value = String(formValues[key] ?? '');
+                if (!value.trim()) return;
+
+                promptHistory.apps[appId] = promptHistory.apps[appId] || {};
+                const entries = Array.isArray(promptHistory.apps[appId][key]) ? promptHistory.apps[appId][key] : [];
+                const previous = entries.find(entry => entry?.value === value);
+                const withoutDuplicate = entries.filter(entry => entry?.value !== value);
+                promptHistory.apps[appId][key] = limitPromptHistoryEntries([
+                    { value, createdAt: Date.now(), favorite: previous?.favorite === true },
+                    ...withoutDuplicate
+                ]);
+                changed = true;
+            });
+            if (changed) persistPromptHistory();
+        }
+
+        function importPromptHistoryFromGenerationSnapshots() {
+            const appId = getCurrentAppHistoryId();
+            const snapshots = Object.values(generationHistory.generations || {})
+                .filter(snapshot => snapshot?.appId === appId)
+                .sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
+            if (snapshots.length === 0) return;
+
+            let changed = false;
+            promptHistory.apps[appId] = promptHistory.apps[appId] || {};
+            promptHistory.imported = promptHistory.imported || {};
+            promptHistory.imported[appId] = promptHistory.imported[appId] || {};
+            Object.entries(currentFormConfig || {}).forEach(([key, params]) => {
+                if (!isPromptHistoryControl(params)) return;
+                if (promptHistory.imported[appId][key] === true) return;
+                const existing = Array.isArray(promptHistory.apps[appId][key]) ? promptHistory.apps[appId][key] : [];
+                const seen = new Set(existing.map(entry => entry?.value));
+                const imported = [];
+                snapshots.forEach(snapshot => {
+                    const value = snapshot?.controls?.[key]?.value;
+                    if (typeof value !== 'string' || !value.trim() || seen.has(value)) return;
+                    seen.add(value);
+                    imported.push({ value, createdAt: Number(snapshot.createdAt || 0) || Date.now(), favorite: false });
+                });
+                if (imported.length > 0) {
+                    promptHistory.apps[appId][key] = limitPromptHistoryEntries([...existing, ...imported]);
+                }
+                promptHistory.imported[appId][key] = true;
+                changed = true;
+            });
+            if (changed) persistPromptHistory();
+        }
+
+        function getMediaHistoryKey(url) {
+            if (!url) return '';
+            try {
+                const parsed = new URL(url, window.location.href);
+                return `${parsed.pathname}${parsed.search}`;
+            } catch(e) {
+                return String(url).split('#')[0];
+            }
+        }
+
+        function normalizeWorkflowTextOutput(value) {
+            if (Array.isArray(value)) return value.map(normalizeWorkflowTextOutput).filter(Boolean).join('\n\n');
+            if (value === null || value === undefined) return '';
+            if (typeof value === 'object') {
+                try { return JSON.stringify(value, null, 2); }
+                catch(e) { return String(value); }
+            }
+            return String(value);
+        }
+
+        function formatLoraDisplayName(value) {
+            const raw = String(value ?? '');
+            if (!raw || raw === 'None') return raw || 'None';
+            const filename = raw.split(/[\\/]/).pop() || raw;
+            return filename.replace(/\.safetensors$/i, '');
+        }
+
+        function updateWorkflowTextOutputControl(key, text, nodeId, updatedAt = null) {
+            const container = document.getElementById(`text_output_${key}`);
+            const textElement = document.getElementById(`text_output_value_${key}`);
+            const statusElement = document.getElementById(`text_output_status_${key}`);
+            if (!container || !textElement || !statusElement) return;
+            const hasResult = updatedAt !== null;
+            container.classList.toggle('empty', !hasResult);
+            textElement.innerText = hasResult ? (text || '(Empty text)') : `Waiting for text from node ${nodeId || '—'}…`;
+            statusElement.innerText = hasResult ? `Node ${nodeId} · ${new Date(updatedAt).toLocaleTimeString()}` : '';
+        }
+
+        function handleWorkflowTextOutput(detail) {
+            if (!detail?.output || !Object.prototype.hasOwnProperty.call(detail.output, 'appbuilder_text')) return;
+            const reportedNodeId = Array.isArray(detail.output.appbuilder_node_id) ? detail.output.appbuilder_node_id[0] : '';
+            const nodeId = String(detail.node ?? detail.node_id ?? reportedNodeId ?? '');
+            if (!nodeId) return;
+            const text = normalizeWorkflowTextOutput(detail.output.appbuilder_text);
+            const outputValue = { text, updatedAt: Date.now() };
+            workflowTextOutputValues.set(nodeId, outputValue);
+            Object.entries(currentFormConfig || {}).forEach(([key, params]) => {
+                if (String(params?.type || '').toUpperCase() !== 'TEXT_OUTPUT') return;
+                if (String(params.node_id ?? '') !== nodeId) return;
+                updateWorkflowTextOutputControl(key, text, nodeId, outputValue.updatedAt);
+            });
+        }
+
+        function resetWorkflowTextOutputs() {
+            workflowTextOutputValues.clear();
+            Object.entries(currentFormConfig || {}).forEach(([key, params]) => {
+                if (String(params?.type || '').toUpperCase() !== 'TEXT_OUTPUT') return;
+                updateWorkflowTextOutputControl(key, '', String(params.node_id ?? ''));
+            });
+        }
+
+        function pruneGenerationHistory() {
+            const validMediaKeys = new Set(galleryData.map(getMediaHistoryKey));
+            Object.keys(generationHistory.media).forEach(key => {
+                if (!validMediaKeys.has(key)) delete generationHistory.media[key];
+            });
+
+            const sortedGenerations = Object.entries(generationHistory.generations)
+                .sort((a, b) => Number(b[1]?.createdAt || 0) - Number(a[1]?.createdAt || 0));
+            const retainedIds = new Set(sortedGenerations.slice(0, 200).map(([id]) => id));
+            Object.keys(generationHistory.generations).forEach(id => {
+                if (!retainedIds.has(id)) delete generationHistory.generations[id];
+            });
+            Object.keys(generationHistory.media).forEach(key => {
+                if (!generationHistory.generations[generationHistory.media[key]]) delete generationHistory.media[key];
+            });
+        }
+
+        function persistGenerationHistory() {
+            pruneGenerationHistory();
+            try {
+                localStorage.setItem('appview_generation_history_v1', JSON.stringify(generationHistory));
+            } catch(e) {
+                console.warn('[AppBuilder] Could not persist generation parameter history:', e);
+            }
+        }
+
+        function createGenerationSnapshot(formValues, batchCount) {
+            recordPromptHistory(formValues);
+            const id = `gen_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+            const controls = {};
+            Object.entries(currentFormConfig || {}).forEach(([key, params]) => {
+                const type = String(params?.type || 'STRING').toUpperCase();
+                if (type === 'BUTTON' || type === 'PREVIEWER' || type === 'TEXT_OUTPUT') return;
+                if (!Object.prototype.hasOwnProperty.call(formValues, key)) return;
+                const seedButton = document.getElementById(`input_action_btn_${key}`);
+                controls[key] = {
+                    type,
+                    name: params?.name || key,
+                    value: cloneHistoryValue(formValues[key]),
+                    ...(seedButton ? { seedMode: seedButton.dataset.mode || 'randomize' } : {})
+                };
+            });
+
+            generationHistory.generations[id] = {
+                id,
+                createdAt: Date.now(),
+                appId: appFileName || (sourceNodeId ? `node_${sourceNodeId}` : 'appview'),
+                batchCount: Math.max(1, Number(batchCount) || 1),
+                controls
+            };
+            latestGenerationId = id;
+            persistGenerationHistory();
+            return id;
+        }
+
+        function queueGenerationSnapshot(generationId, copies = 1) {
+            for (let i = 0; i < Math.max(1, copies); i++) queuedGenerationIds.push(generationId);
+        }
+
+        function discardQueuedGenerationSnapshot(generationId) {
+            queuedGenerationIds = queuedGenerationIds.filter(id => id !== generationId);
+            if (activeGenerationId === generationId) activeGenerationId = null;
+            if (latestGenerationId === generationId) latestGenerationId = null;
+            const isLinked = Object.values(generationHistory.media).includes(generationId);
+            if (!isLinked) delete generationHistory.generations[generationId];
+            persistGenerationHistory();
+        }
+
+        function activateGenerationSnapshot(detail) {
+            const promptId = detail && typeof detail === 'object' ? detail.prompt_id : null;
+            const mappedId = promptId ? generationIdByPromptId.get(promptId) : null;
+            activeGenerationId = mappedId || queuedGenerationIds.shift() || null;
+            if (mappedId) {
+                const queuedIndex = queuedGenerationIds.indexOf(mappedId);
+                if (queuedIndex >= 0) queuedGenerationIds.splice(queuedIndex, 1);
+            }
+        }
+
+        function linkMediaToGeneration(url, detail) {
+            const promptId = detail && typeof detail === 'object' ? detail.prompt_id : null;
+            const generationId = (promptId && generationIdByPromptId.get(promptId)) || activeGenerationId;
+            if (!generationId || !generationHistory.generations[generationId]) return;
+            generationHistory.media[getMediaHistoryKey(url)] = generationId;
+            persistGenerationHistory();
+        }
+
+        function getGenerationSnapshotForMedia(url) {
+            const generationId = generationHistory.media[getMediaHistoryKey(url)];
+            return generationId ? generationHistory.generations[generationId] || null : null;
+        }
     
         // 🔍 精准检测 URL 是否为视频文件
         function isVideoUrl(urlStr) {
@@ -1400,6 +2061,248 @@
                 const lower = urlStr.toLowerCase();
                 return lower.includes('.mp4') || lower.includes('.webm') || lower.includes('.mov');
             }
+        }
+
+        function createPreviewMedia(src, focused = false) {
+            let media;
+            if (isVideoUrl(src)) {
+                media = document.createElement('video');
+                media.src = focused || src.includes('#') ? src : `${src}#t=0.001`;
+                media.preload = focused ? 'auto' : 'metadata';
+                media.muted = true;
+                media.defaultMuted = true;
+                media.playsInline = true;
+                media.setAttribute('playsinline', '');
+                media.setAttribute('webkit-playsinline', '');
+                media.controls = focused;
+            } else {
+                media = document.createElement('img');
+                media.src = src;
+                media.alt = 'Generated result';
+                media.draggable = false;
+            }
+            return media;
+        }
+
+        function showLivePreview(blob) {
+            // A late low-resolution frame must never replace an already available original.
+            if (!blob || currentRunMediaUrls.length > 0) return;
+            if (livePreviewObjectUrl) URL.revokeObjectURL(livePreviewObjectUrl);
+            livePreviewObjectUrl = URL.createObjectURL(blob);
+
+            const mainPreview = document.getElementById('main-preview');
+            const results = document.getElementById('preview-results');
+            const resultVideo = document.querySelector('#preview-results-media video');
+            if (resultVideo) resultVideo.pause();
+            if (results) results.classList.remove('visible');
+            if (mainPreview) {
+                mainPreview.src = livePreviewObjectUrl;
+                mainPreview.style.display = 'block';
+            }
+        }
+
+        function showPreviewResultsGrid() {
+            if (currentRunMediaUrls.length <= 1) return;
+            previewFocusedIndex = -1;
+            const grid = document.getElementById('preview-results-grid');
+            const focus = document.getElementById('preview-results-focus');
+            const focusedVideo = document.querySelector('#preview-results-media video');
+            if (focusedVideo) focusedVideo.pause();
+            if (grid) grid.style.display = 'grid';
+            if (focus) focus.classList.remove('visible');
+        }
+
+        function focusPreviewResult(index) {
+            if (index < 0 || index >= currentRunMediaUrls.length) return;
+            previewFocusedIndex = index;
+
+            const src = currentRunMediaUrls[index];
+            const grid = document.getElementById('preview-results-grid');
+            const focus = document.getElementById('preview-results-focus');
+            const mediaHost = document.getElementById('preview-results-media');
+            const prevBtn = document.getElementById('preview-result-prev');
+            const nextBtn = document.getElementById('preview-result-next');
+            const backBtn = document.getElementById('preview-results-back');
+            const counter = document.getElementById('preview-result-counter');
+            if (!focus || !mediaHost) return;
+
+            const oldVideo = mediaHost.querySelector('video');
+            if (oldVideo) oldVideo.pause();
+            mediaHost.replaceChildren(createPreviewMedia(src, true));
+            mediaHost.ondblclick = () => openLightbox(src);
+
+            if (grid) grid.style.display = 'none';
+            focus.classList.add('visible');
+            if (prevBtn) prevBtn.disabled = index === 0;
+            if (nextBtn) nextBtn.disabled = index === currentRunMediaUrls.length - 1;
+            if (backBtn) backBtn.style.display = currentRunMediaUrls.length > 1 ? 'flex' : 'none';
+            if (counter) {
+                counter.innerText = `${index + 1} / ${currentRunMediaUrls.length}`;
+                counter.style.display = currentRunMediaUrls.length > 1 ? 'block' : 'none';
+            }
+        }
+
+        function navigatePreviewResult(direction) {
+            if (previewFocusedIndex < 0) return;
+            const nextIndex = previewFocusedIndex + direction;
+            if (nextIndex < 0 || nextIndex >= currentRunMediaUrls.length) return;
+            focusPreviewResult(nextIndex);
+        }
+
+        function renderFinalPreview(preserveFocusedResult = false) {
+            if (currentRunMediaUrls.length === 0) return;
+
+            if (livePreviewObjectUrl) {
+                URL.revokeObjectURL(livePreviewObjectUrl);
+                livePreviewObjectUrl = null;
+            }
+
+            const mainPreview = document.getElementById('main-preview');
+            const results = document.getElementById('preview-results');
+            const grid = document.getElementById('preview-results-grid');
+            const focus = document.getElementById('preview-results-focus');
+            if (!results || !grid || !focus) return;
+
+            if (mainPreview) mainPreview.style.display = 'none';
+            results.classList.add('visible');
+            grid.replaceChildren();
+
+            const columns = Math.ceil(Math.sqrt(currentRunMediaUrls.length));
+            const rows = Math.ceil(currentRunMediaUrls.length / columns);
+            grid.style.gridTemplateColumns = `repeat(${columns}, minmax(0, 1fr))`;
+            grid.style.gridTemplateRows = `repeat(${rows}, minmax(0, 1fr))`;
+
+            currentRunMediaUrls.forEach((src, index) => {
+                const tile = document.createElement('button');
+                tile.type = 'button';
+                tile.className = 'preview-result-tile';
+                tile.title = 'Expand result';
+                tile.setAttribute('aria-label', `Open result ${index + 1} of ${currentRunMediaUrls.length}`);
+                tile.appendChild(createPreviewMedia(src, false));
+                tile.onclick = () => focusPreviewResult(index);
+                grid.appendChild(tile);
+            });
+
+            if (currentRunMediaUrls.length === 1) {
+                focusPreviewResult(0);
+            } else if (preserveFocusedResult && previewFocusedIndex >= 0) {
+                focusPreviewResult(Math.min(previewFocusedIndex, currentRunMediaUrls.length - 1));
+            } else {
+                showPreviewResultsGrid();
+            }
+        }
+
+        function initPreviewResultEvents() {
+            const prevBtn = document.getElementById('preview-result-prev');
+            const nextBtn = document.getElementById('preview-result-next');
+            const backBtn = document.getElementById('preview-results-back');
+            if (prevBtn) prevBtn.onclick = () => navigatePreviewResult(-1);
+            if (nextBtn) nextBtn.onclick = () => navigatePreviewResult(1);
+            if (backBtn) backBtn.onclick = showPreviewResultsGrid;
+
+            window.addEventListener('keydown', (e) => {
+                const lightboxModal = document.getElementById('lightbox-modal');
+                if (lightboxModal && lightboxModal.style.display === 'flex') return;
+                const profileModal = document.getElementById('generation-profile-modal');
+                if (profileModal && profileModal.style.display === 'flex') return;
+
+                const focus = document.getElementById('preview-results-focus');
+                if (!focus || !focus.classList.contains('visible') || previewFocusedIndex < 0) return;
+
+                const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+                if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') return;
+
+                if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    navigatePreviewResult(-1);
+                } else if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    navigatePreviewResult(1);
+                } else if (e.key === 'Escape' && currentRunMediaUrls.length > 1) {
+                    e.preventDefault();
+                    showPreviewResultsGrid();
+                }
+            });
+        }
+
+        function eventMatchesHotkey(e, hotkey) {
+            if (!hotkey) return false;
+            const parts = hotkey.split('+');
+            const code = parts[parts.length - 1];
+            const modifiers = new Set(parts.slice(0, -1));
+            return e.code === code
+                && e.ctrlKey === modifiers.has('Ctrl')
+                && e.metaKey === modifiers.has('Meta')
+                && e.altKey === modifiers.has('Alt')
+                && e.shiftKey === modifiers.has('Shift');
+        }
+
+        function syncHotkeyValueToParent(key, value) {
+            if (!window.comfyApp || !sourceNodeId) return;
+            const node = window.comfyApp.graph.getNodeById(sourceNodeId);
+            const widget = node?.widgets?.find(w => w.name === key);
+            if (!widget) return;
+            widget.value = value;
+            if (widget.callback) widget.callback(value);
+        }
+
+        function applyControlHotkey(binding) {
+            const input = document.getElementById(`input_${binding.key}`);
+            if (!input) return;
+
+            if (binding.type === 'BOOLEAN') {
+                input.checked = !input.checked;
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+                return;
+            }
+
+            if (binding.type === 'INT') {
+                const step = Number(binding.params.step ?? 1) || 1;
+                const min = binding.params.min !== undefined ? Number(binding.params.min) : -Infinity;
+                const max = binding.params.max !== undefined ? Number(binding.params.max) : Infinity;
+                let nextValue = Math.round((Number(input.value) || 0) + step);
+                nextValue = Math.min(max, Math.max(min, nextValue));
+                input.value = String(nextValue);
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+                syncHotkeyValueToParent(binding.key, nextValue);
+            }
+        }
+
+        function initControlHotkeys() {
+            window.addEventListener('keydown', (e) => {
+                if (e.repeat || e.isComposing) return;
+                if ((e.metaKey || e.ctrlKey) && e.code === 'Enter') return;
+
+                const lightbox = document.getElementById('lightbox-modal');
+                const maskModal = document.getElementById('mask-modal');
+                const multilineModal = document.getElementById('multiline-modal');
+                const profileModal = document.getElementById('generation-profile-modal');
+                if ((lightbox && lightbox.style.display === 'flex')
+                    || (maskModal && maskModal.style.display === 'flex')
+                    || (multilineModal && multilineModal.style.display === 'flex')
+                    || (profileModal && profileModal.style.display === 'flex')) return;
+
+                const active = document.activeElement;
+                const isTextEditing = active && (
+                    active.tagName === 'INPUT' || active.tagName === 'TEXTAREA'
+                    || active.tagName === 'SELECT' || active.isContentEditable
+                );
+
+                let handled = false;
+                for (const binding of controlHotkeyBindings) {
+                    if (!eventMatchesHotkey(e, binding.hotkey)) continue;
+                    const hasSafeModifier = e.ctrlKey || e.metaKey || e.altKey;
+                    if (isTextEditing && !hasSafeModifier) continue;
+                    applyControlHotkey(binding);
+                    handled = true;
+                }
+
+                if (handled) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            }, true);
         }
         
         function renderGalleryItem(src, isPrepend) {
@@ -1451,9 +2354,22 @@
                     placeholder.replaceWith(itemEl);
                 };
                 testImg.onerror = () => {
-                    placeholder.remove();
-                    galleryData = galleryData.filter(url => url !== src);
-                    localStorage.setItem('appview_gallery_history', JSON.stringify(galleryData));
+                    placeholder.className = 'gallery-item-unavailable';
+                    placeholder.title = 'Media is temporarily unavailable. Click to retry.';
+                    placeholder.innerText = `Unavailable\n${getMediaFilename(src)}`;
+                    placeholder.onclick = () => {
+                        openLightbox(src);
+                        placeholder.className = 'gallery-item-placeholder';
+                        placeholder.innerText = '';
+                        placeholder.onclick = null;
+                        try {
+                            const retryUrl = new URL(src, window.location.href);
+                            retryUrl.searchParams.set('_appbuilder_retry', Date.now());
+                            testImg.src = retryUrl.href;
+                        } catch(e) {
+                            testImg.src = src;
+                        }
+                    };
                 };
                 testImg.src = src;
             }
@@ -1465,6 +2381,240 @@
             const num = parseInt(count) || 0;
             if (num > 0) { badge.innerText = num; badge.style.display = 'flex'; } 
             else { badge.style.display = 'none'; }
+        }
+
+        function formatGenerationDuration(milliseconds) {
+            const totalSeconds = Math.max(0, milliseconds) / 1000;
+            if (totalSeconds < 60) return `${totalSeconds.toFixed(1)}s`;
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = (totalSeconds % 60).toFixed(1).padStart(4, '0');
+            return `${minutes}:${seconds}`;
+        }
+
+        function formatNodeDuration(milliseconds) {
+            const value = Math.max(0, milliseconds);
+            if (value < 1000) return `${Math.round(value)} ms`;
+            if (value < 10000) return `${(value / 1000).toFixed(2)}s`;
+            return formatGenerationDuration(value);
+        }
+
+        function resolveExecutionNodeName(nodeId) {
+            if (isStandaloneMode && standaloneWorkflowData?.nodes) {
+                const node = standaloneWorkflowData.nodes.find(n => String(n.id) === String(nodeId));
+                if (node) {
+                    const displayName = globalObjectInfo?.[node.type]?.display_name;
+                    return node.title || displayName || node.type || `Node #${nodeId}`;
+                }
+            } else if (window.comfyApp) {
+                const node = window.comfyApp.graph.getNodeById(nodeId);
+                if (node) return node.title || node.type || `Node #${nodeId}`;
+            }
+            return `Node #${nodeId}`;
+        }
+
+        function getGenerationProfileSnapshot(now = performance.now()) {
+            return generationNodeProfile.map(entry => ({
+                ...entry,
+                durationMs: entry === activeGenerationNode ? Math.max(0, now - entry.startedAt) : entry.durationMs,
+                running: entry === activeGenerationNode
+            }));
+        }
+
+        function finishActiveGenerationNode(now = performance.now()) {
+            if (!activeGenerationNode) return;
+            activeGenerationNode.durationMs = Math.max(0, now - activeGenerationNode.startedAt);
+            activeGenerationNode = null;
+        }
+
+        function startGenerationNode(nodeId) {
+            if (nodeId === null || nodeId === undefined) {
+                finishActiveGenerationNode();
+                return;
+            }
+            if (activeGenerationNode && String(activeGenerationNode.nodeId) === String(nodeId)) return;
+
+            const now = performance.now();
+            finishActiveGenerationNode(now);
+            const entry = {
+                nodeId: String(nodeId),
+                name: resolveExecutionNodeName(nodeId),
+                startedAt: now,
+                durationMs: 0
+            };
+            generationNodeProfile.push(entry);
+            activeGenerationNode = entry;
+            refreshGenerationProfileUI(now);
+        }
+
+        function getGenerationElapsed(now = performance.now()) {
+            return generationStartedAt === null ? generationElapsedMs : Math.max(0, now - generationStartedAt);
+        }
+
+        function buildGenerationTooltip(now = performance.now()) {
+            const snapshot = getGenerationProfileSnapshot(now);
+            const badge = document.getElementById('generation-time');
+            if (!badge) return;
+            if (snapshot.length === 0) {
+                badge.title = generationStartedAt === null
+                    ? 'Generation time\nNo executed node timings available'
+                    : 'Generation in progress\nWaiting for the first node…';
+                return;
+            }
+
+            const aggregated = new Map();
+            snapshot.forEach(entry => {
+                const key = `${entry.nodeId}\u0000${entry.name}`;
+                const current = aggregated.get(key) || { name: entry.name, durationMs: 0 };
+                current.durationMs += entry.durationMs;
+                aggregated.set(key, current);
+            });
+            const top = Array.from(aggregated.values())
+                .sort((a, b) => b.durationMs - a.durationMs)
+                .slice(0, 5);
+            badge.title = [
+                `Generation: ${formatGenerationDuration(getGenerationElapsed(now))}`,
+                'Top nodes:',
+                ...top.map((entry, index) => `${index + 1}. ${entry.name} — ${formatNodeDuration(entry.durationMs)}`),
+                '',
+                'Click for all node timings'
+            ].join('\n');
+        }
+
+        function refreshGenerationProfileUI(now = performance.now()) {
+            buildGenerationTooltip(now);
+            const modal = document.getElementById('generation-profile-modal');
+            if (!modal || modal.style.display !== 'flex') return;
+
+            const snapshot = getGenerationProfileSnapshot(now);
+            const summary = document.getElementById('generation-profile-summary');
+            const list = document.getElementById('generation-profile-list');
+            if (!summary || !list) return;
+            const previousScrollTop = list.scrollTop;
+
+            const nodesTotal = snapshot.reduce((total, entry) => total + entry.durationMs, 0);
+            summary.innerHTML = '';
+            const summaryItems = [
+                `Generation: ${formatGenerationDuration(getGenerationElapsed(now))}`,
+                `Executions: ${snapshot.length}`,
+                `Measured in nodes: ${formatGenerationDuration(nodesTotal)}`
+            ];
+            summaryItems.forEach(textValue => {
+                const span = document.createElement('span');
+                span.innerText = textValue;
+                summary.appendChild(span);
+            });
+
+            list.innerHTML = '';
+            if (snapshot.length === 0) {
+                const empty = document.createElement('div');
+                empty.className = 'generation-profile-empty';
+                empty.innerText = generationStartedAt === null
+                    ? 'No node timings are available for the last generation.'
+                    : 'Waiting for the first node…';
+                list.appendChild(empty);
+                return;
+            }
+
+            snapshot.forEach((entry, index) => {
+                const row = document.createElement('div');
+                row.className = 'generation-profile-row';
+
+                const order = document.createElement('div');
+                order.className = 'generation-profile-order';
+                order.innerText = String(index + 1);
+
+                const node = document.createElement('div');
+                node.className = 'generation-profile-node';
+                const name = document.createElement('div');
+                name.className = 'generation-profile-name';
+                name.innerText = entry.name;
+                name.title = entry.name;
+                const id = document.createElement('div');
+                id.className = 'generation-profile-id';
+                id.innerText = `Node #${entry.nodeId}${entry.running ? ' · running' : ''}`;
+                node.appendChild(name);
+                node.appendChild(id);
+
+                const duration = document.createElement('div');
+                duration.className = 'generation-profile-duration';
+                duration.innerText = formatNodeDuration(entry.durationMs);
+
+                row.appendChild(order);
+                row.appendChild(node);
+                row.appendChild(duration);
+                list.appendChild(row);
+            });
+            list.scrollTop = previousScrollTop;
+        }
+
+        function openGenerationProfile() {
+            const modal = document.getElementById('generation-profile-modal');
+            if (!modal) return;
+            refreshGenerationProfileUI();
+            modal.style.display = 'flex';
+            refreshGenerationProfileUI();
+        }
+
+        function closeGenerationProfile() {
+            const modal = document.getElementById('generation-profile-modal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function initGenerationProfileEvents() {
+            const badge = document.getElementById('generation-time');
+            const modal = document.getElementById('generation-profile-modal');
+            const close = document.getElementById('generation-profile-close');
+            if (!badge || !modal || !close) return;
+            badge.addEventListener('click', openGenerationProfile);
+            badge.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    openGenerationProfile();
+                }
+            });
+            close.addEventListener('click', closeGenerationProfile);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeGenerationProfile();
+            });
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && modal.style.display === 'flex') closeGenerationProfile();
+            });
+        }
+
+        function updateGenerationTimer() {
+            const badge = document.getElementById('generation-time');
+            if (!badge || generationStartedAt === null) return;
+            const now = performance.now();
+            badge.innerText = formatGenerationDuration(now - generationStartedAt);
+            refreshGenerationProfileUI(now);
+        }
+
+        function startGenerationTimer() {
+            if (generationTimerId) clearInterval(generationTimerId);
+            generationStartedAt = performance.now();
+            generationElapsedMs = 0;
+            generationNodeProfile = [];
+            activeGenerationNode = null;
+            const badge = document.getElementById('generation-time');
+            if (badge) {
+                badge.style.display = 'block';
+                badge.innerText = '0.0s';
+            }
+            refreshGenerationProfileUI(generationStartedAt);
+            generationTimerId = setInterval(updateGenerationTimer, 100);
+        }
+
+        function stopGenerationTimer() {
+            if (generationStartedAt === null) return;
+            const now = performance.now();
+            finishActiveGenerationNode(now);
+            generationElapsedMs = Math.max(0, now - generationStartedAt);
+            const badge = document.getElementById('generation-time');
+            if (badge) badge.innerText = formatGenerationDuration(generationElapsedMs);
+            if (generationTimerId) clearInterval(generationTimerId);
+            generationTimerId = null;
+            generationStartedAt = null;
+            refreshGenerationProfileUI(now);
         }
         
         let lastLogId = 0;
@@ -1590,11 +2740,12 @@
             if (!msg) return;
             const statusText = document.getElementById('status-text');
             if (msg.type === 'b_preview') {
-                if (msg.blob) document.getElementById('main-preview').src = URL.createObjectURL(msg.blob);
+                showLivePreview(msg.blob);
             }
             else if (msg.type === 'executed') {
                 const data = msg.detail;
                 if (data && data.output) {
+                    handleWorkflowTextOutput(data);
                     const mediaItems = [];
                     // 递归提取 data.output 下所有的文件项（兼容视频/图片/动画节点）
                     Object.values(data.output).forEach(val => {
@@ -1602,14 +2753,18 @@
                             val.forEach(item => { if (item && item.filename) mediaItems.push(item); });
                         }
                     });
-                    
+
+                    const previousResultCount = currentRunMediaUrls.length;
                     mediaItems.forEach(item => {
                         const mediaUrl = `/api/view?filename=${encodeURIComponent(item.filename)}&subfolder=${encodeURIComponent(item.subfolder || '')}&type=${encodeURIComponent(item.type || 'output')}`;
-                        
+
+                        if (!currentRunMediaUrls.includes(mediaUrl)) currentRunMediaUrls.push(mediaUrl);
+
                         // 加入历史记录与画廊
                         galleryData.unshift(mediaUrl);
                         if (galleryData.length > 1000) galleryData = galleryData.slice(0, 1000);
                         localStorage.setItem('appview_gallery_history', JSON.stringify(galleryData));
+                        linkMediaToGeneration(mediaUrl, data);
                         renderGalleryItem(mediaUrl, true);
                         
                         const lightboxModal = document.getElementById('lightbox-modal');
@@ -1621,9 +2776,16 @@
                             if (currentLightboxIndex === -1) currentLightboxIndex = 0;
                         }
                     });
+
+                    renderFinalPreview(previousResultCount > 1 && previewFocusedIndex >= 0);
                 }
             }
             else if (msg.type === 'execution_start') {
+                activateGenerationSnapshot(msg.detail);
+                currentRunMediaUrls = [];
+                previewFocusedIndex = -1;
+                resetWorkflowTextOutputs();
+                startGenerationTimer();
                 statusText.innerText = t("label_generating", "Generating...");
                 statusText.style.color = "var(--primary)";
                 document.getElementById('progress-bar').style.width = '0%';
@@ -1655,6 +2817,7 @@
                 }
             }
             else if (msg.type === 'execution_interrupted') {
+                stopGenerationTimer();
                 statusText.innerText = t("label_interrupted", "Interrupted");
                 statusText.style.color = "#f44336";
                 document.getElementById('progress-bar').style.width = '0%';
@@ -1662,7 +2825,11 @@
                 document.getElementById('btn-run').innerText = t("button_run", "▷ Run");
                 updateQueueBadge(0);
             }
+            else if (msg.type === 'execution_success') {
+                stopGenerationTimer();
+            }
             else if (msg.type === 'execution_error') {
+                stopGenerationTimer();
                 const data = msg.detail;
                 statusText.innerText = "Error";
                 statusText.style.color = "#f44336"; 
@@ -1679,6 +2846,7 @@
                 }
             }
             else if (msg.type === 'pre_queue_error') {
+                stopGenerationTimer();
                 statusText.innerText = t("label_error", "Error");
                 statusText.style.color = "#f44336";
                 document.getElementById('progress-bar').style.width = '0%';
@@ -1696,6 +2864,8 @@
                 }
                 // 🎯 2. 情况一：生成结束 (nodeId 为 null/undefined)
                 if (nodeId === null || nodeId === undefined) {
+                    startGenerationNode(null);
+                    stopGenerationTimer();
                     statusText.innerText = typeof t === 'function' ? t("label_ready", "Ready") : "Ready";
                     statusText.style.color = "var(--title)";
                     document.getElementById('progress-bar').style.width = '0%';
@@ -1708,22 +2878,10 @@
                 } 
                 // 🎯 3. 情况二：正在运行某个节点
                 else {
-                    let nodeName = null;
-                    // A. ⚡ 独立无头模式 (Standalone Mode)
-                    if (isStandaloneMode && standaloneWorkflowData && standaloneWorkflowData.nodes) {
-                        const node = standaloneWorkflowData.nodes.find(n => String(n.id) === String(nodeId));
-                        if (node) {
-                            const displayName = globalObjectInfo?.[node.type]?.display_name;
-                            nodeName = node.title || displayName || node.type || `Node #${nodeId}`;
-                        }
-                    } 
-                    // B. 🎨 画布模式 (Canvas Mode)
-                    else if (window.comfyApp) {
-                        const node = window.comfyApp.graph.getNodeById(nodeId);
-                        if (node) nodeName = node.title || node.type || `Node #${nodeId}`;
-                    }
+                    const nodeName = resolveExecutionNodeName(nodeId);
+                    startGenerationNode(nodeId);
                     // 更新状态文本
-                    statusText.innerText = nodeName || `Node #${nodeId}`; 
+                    statusText.innerText = nodeName;
                     statusText.style.color = "var(--primary)";
                 }
             }
@@ -1738,6 +2896,9 @@
         
         window.addEventListener('DOMContentLoaded', async () => {
             await loadI18n();
+            initPreviewResultEvents();
+            initControlHotkeys();
+            initGenerationProfileEvents();
             const splash = document.getElementById('splash-screen');
             if (splash && !isStandaloneMode) setTimeout(() => { splash.classList.add('fade-out'); }, 400);
             
@@ -1898,6 +3059,12 @@
                     const galleryScroll = document.getElementById('gallery-scroll');
                     if (galleryScroll) galleryScroll.innerHTML = ''; // 👈 一键彻底清空图片、视频及 ▶ 播放按钮
                     galleryData = []; localStorage.removeItem('appview_gallery_history');
+                    generationHistory = { version: 1, media: {}, generations: {} };
+                    queuedGenerationIds = [];
+                    activeGenerationId = null;
+                    latestGenerationId = null;
+                    generationIdByPromptId.clear();
+                    localStorage.removeItem('appview_generation_history_v1');
                 }
             };
             
@@ -2120,6 +3287,40 @@
         async function renderDynamicForm(config) {
             const formContainer = document.getElementById('dynamic-form');
             formContainer.innerHTML = ''; 
+            currentFormConfig = cloneHistoryValue(config || {});
+            importPromptHistoryFromGenerationSnapshots();
+            controlHotkeyBindings = Object.entries(config)
+                .map(([key, params]) => ({
+                    key,
+                    params,
+                    type: String(params.type || '').toUpperCase(),
+                    hotkey: params.hotkey || ''
+                }))
+                .filter(binding => binding.hotkey && (binding.type === 'BOOLEAN' || binding.type === 'INT'));
+
+            const additionalControlGroups = [];
+            const createVisualGroupAppender = parent => {
+                let activeGroupId = '';
+                let activeWrapper = null;
+                return (control, rawGroupId) => {
+                    const groupId = String(rawGroupId ?? '').trim();
+                    if (!groupId) {
+                        activeGroupId = '';
+                        activeWrapper = null;
+                        parent.appendChild(control);
+                        return;
+                    }
+                    if (!activeWrapper || activeGroupId !== groupId) {
+                        activeGroupId = groupId;
+                        activeWrapper = document.createElement('div');
+                        activeWrapper.className = 'control-visual-group';
+                        activeWrapper.dataset.groupId = groupId;
+                        parent.appendChild(activeWrapper);
+                    }
+                    activeWrapper.appendChild(control);
+                };
+            };
+            const appendPrimaryControl = createVisualGroupAppender(formContainer);
             
             for (const [key, params] of Object.entries(config)) {
                 const type = (params.type || "STRING").toUpperCase();
@@ -2142,7 +3343,20 @@
                     currentValue = params.value !== undefined ? params.value : params.default;
                 }
                     
-                if (type === "INT" || type === "FLOAT") {
+                if (type === "TEXT_OUTPUT") {
+                    const nodeId = String(params.node_id ?? '');
+                    const output = document.createElement('div');
+                    output.className = 'workflow-text-output empty'; output.id = `text_output_${key}`;
+                    const text = document.createElement('pre');
+                    text.className = 'workflow-text-output-text'; text.id = `text_output_value_${key}`;
+                    const status = document.createElement('span');
+                    status.className = 'workflow-text-output-status'; status.id = `text_output_status_${key}`;
+                    output.appendChild(text); output.appendChild(status); group.appendChild(output);
+
+                    const savedOutput = workflowTextOutputValues.get(nodeId);
+                    if (savedOutput) updateWorkflowTextOutputControl(key, savedOutput.text, nodeId, savedOutput.updatedAt);
+                    else updateWorkflowTextOutputControl(key, '', nodeId);
+                } else if (type === "INT" || type === "FLOAT") {
                     const isSlider = params.slider === true || params.display === "slider";
                     const precision = params.precision !== undefined ? Number(params.precision) : (type === "FLOAT" ? 3 : 0);
                     
@@ -2252,6 +3466,24 @@
                     btnAdd.type = 'button';
                     btnAdd.className = 'btn-add-lora';
                     btnAdd.innerText = t('btn_add_lora', '+ Add LoRA');
+
+                    const btnDivider = document.createElement('button');
+                    btnDivider.type = 'button';
+                    btnDivider.className = 'btn-add-lora';
+                    btnDivider.innerText = '+ Divider';
+                    btnDivider.title = 'Add a visual separator';
+
+                    const btnEdit = document.createElement('button');
+                    btnEdit.type = 'button';
+                    btnEdit.className = 'btn-add-lora lora-stack-edit-btn';
+                    btnEdit.innerText = 'Edit';
+                    btnEdit.title = 'Show reorder and remove controls';
+
+                    const stackActions = document.createElement('div');
+                    stackActions.className = 'lora-stack-actions';
+                    stackActions.appendChild(btnAdd);
+                    stackActions.appendChild(btnDivider);
+                    stackActions.appendChild(btnEdit);
                     
                     const masterControlWrap = document.createElement('div');
                     masterControlWrap.style.cssText = 'display: flex; align-items: center; gap: 6px;';
@@ -2268,7 +3500,7 @@
                     
                     masterControlWrap.appendChild(masterLabel);
                     masterControlWrap.appendChild(masterToggle);
-                    header.appendChild(btnAdd);
+                    header.appendChild(stackActions);
                     header.appendChild(masterControlWrap);
                     container.appendChild(header);
                     
@@ -2301,10 +3533,14 @@
                     
                     const updateHiddenInput = () => {
                         const loras = [];
-                        const rows = rowsContainer.querySelectorAll('.lora-row');
+                        const rows = rowsContainer.querySelectorAll('.lora-list-item');
                         rows.forEach(row => {
+                            if (row.dataset.itemType === 'separator') {
+                                loras.push({ type: 'separator' });
+                                return;
+                            }
                             loras.push({
-                                lora_name: row.querySelector('select').value,
+                                lora_name: row.dataset.loraName || 'None',
                                 strength: parseFloat(row.querySelector('input[type="number"]').value),
                                 enabled: row.querySelector('.toggle-switch').classList.contains('active')
                             });
@@ -2327,14 +3563,227 @@
                     const formatStrength = (raw) => {
                         let val = parseFloat(raw);
                         if (isNaN(val)) val = 0.0;
-                        if (val < 0.0) val = 0.0;
+                        if (val < -100.0) val = -100.0;
                         if (val > 100.0) val = 100.0;
                         return val.toFixed(2);
+                    };
+
+                    let draggedLoraItem = null;
+                    let loraEditMode = false;
+
+                    const clearDragState = () => {
+                        rowsContainer.querySelectorAll('.lora-list-item').forEach(item => {
+                            item.classList.remove('dragging', 'drag-target');
+                        });
+                        draggedLoraItem = null;
+                    };
+
+                    const createDragHandle = (row) => {
+                        const handle = document.createElement('button');
+                        handle.type = 'button';
+                        handle.className = 'lora-drag-handle';
+                        handle.innerText = '⠿';
+                        handle.title = 'Drag to reorder';
+                        handle.setAttribute('aria-label', 'Drag to reorder');
+                        handle.draggable = loraEditMode;
+                        handle.addEventListener('dragstart', event => {
+                            draggedLoraItem = row;
+                            event.dataTransfer.effectAllowed = 'move';
+                            event.dataTransfer.setData('text/plain', 'appbuilder-lora-item');
+                            try { event.dataTransfer.setDragImage(row, 12, 18); } catch(e) {}
+                            requestAnimationFrame(() => row.classList.add('dragging'));
+                        });
+                        handle.addEventListener('dragend', () => {
+                            clearDragState();
+                            updateHiddenInput();
+                        });
+                        return handle;
+                    };
+
+                    rowsContainer.addEventListener('dragover', event => {
+                        if (!draggedLoraItem) return;
+                        event.preventDefault();
+                        event.dataTransfer.dropEffect = 'move';
+
+                        const items = [...rowsContainer.querySelectorAll('.lora-list-item:not(.dragging)')];
+                        items.forEach(item => item.classList.remove('drag-target'));
+                        const insertBefore = items.find(item => {
+                            const bounds = item.getBoundingClientRect();
+                            return event.clientY < bounds.top + bounds.height / 2;
+                        });
+                        if (insertBefore) {
+                            insertBefore.classList.add('drag-target');
+                            rowsContainer.insertBefore(draggedLoraItem, insertBefore);
+                        } else {
+                            rowsContainer.appendChild(draggedLoraItem);
+                        }
+                    });
+
+                    rowsContainer.addEventListener('drop', event => {
+                        if (!draggedLoraItem) return;
+                        event.preventDefault();
+                        clearDragState();
+                        updateHiddenInput();
+                    });
+
+                    const closeAllLoraPickers = (except = null) => {
+                        rowsContainer.querySelectorAll('.lora-picker.open').forEach(picker => {
+                            if (picker !== except && typeof picker._closePicker === 'function') picker._closePicker();
+                        });
+                    };
+
+                    const buildLoraTree = (values, selectedValue) => {
+                        const root = { folders: new Map(), files: [], containsSelected: false };
+                        values.forEach(value => {
+                            if (!value || value === 'None') return;
+                            const parts = String(value).split(/[\\/]/).filter(Boolean);
+                            const filename = parts.pop() || String(value);
+                            let node = root;
+                            if (value === selectedValue) node.containsSelected = true;
+                            parts.forEach(folderName => {
+                                if (!node.folders.has(folderName)) {
+                                    node.folders.set(folderName, {
+                                        name: folderName,
+                                        folders: new Map(),
+                                        files: [],
+                                        containsSelected: false
+                                    });
+                                }
+                                node = node.folders.get(folderName);
+                                if (value === selectedValue) node.containsSelected = true;
+                            });
+                            node.files.push({ value, filename });
+                        });
+                        return root;
+                    };
+
+                    const createLoraPicker = (row, initialValue) => {
+                        let selectedValue = initialValue || 'None';
+                        const picker = document.createElement('div');
+                        picker.className = 'lora-picker';
+
+                        const button = document.createElement('button');
+                        button.type = 'button';
+                        button.className = 'lora-picker-button';
+                        button.tabIndex = loraEditMode ? 0 : -1;
+                        button.setAttribute('aria-haspopup', 'tree');
+                        button.setAttribute('aria-expanded', 'false');
+                        button.setAttribute('aria-disabled', String(!loraEditMode));
+
+                        const menu = document.createElement('div');
+                        menu.className = 'lora-tree-menu';
+                        menu.setAttribute('role', 'tree');
+
+                        const updateButton = () => {
+                            button.innerText = formatLoraDisplayName(selectedValue);
+                            button.title = selectedValue;
+                            row.dataset.loraName = selectedValue;
+                        };
+
+                        const closePicker = () => {
+                            picker.classList.remove('open');
+                            button.setAttribute('aria-expanded', 'false');
+                            document.removeEventListener('pointerdown', handleOutsidePointer, true);
+                        };
+
+                        const handleOutsidePointer = event => {
+                            if (!picker.contains(event.target)) closePicker();
+                        };
+                        picker._closePicker = closePicker;
+
+                        const selectValue = value => {
+                            selectedValue = value;
+                            updateButton();
+                            menu.querySelectorAll('.lora-tree-file').forEach(item => {
+                                item.classList.toggle('active', item.dataset.value === selectedValue);
+                            });
+                            closePicker();
+                            updateHiddenInput();
+                        };
+
+                        const createFileButton = (value, label) => {
+                            const item = document.createElement('button');
+                            item.type = 'button';
+                            item.className = 'lora-tree-file' + (value === selectedValue ? ' active' : '');
+                            item.dataset.value = value;
+                            item.innerText = label;
+                            item.title = value;
+                            item.setAttribute('role', 'treeitem');
+                            item.onclick = event => {
+                                event.stopPropagation();
+                                selectValue(value);
+                            };
+                            return item;
+                        };
+
+                        const availableValues = [...loraValues];
+                        if (selectedValue && !availableValues.includes(selectedValue)) availableValues.push(selectedValue);
+                        menu.appendChild(createFileButton('None', 'None'));
+
+                        const tree = buildLoraTree(availableValues, selectedValue);
+                        const renderLevel = (node, parent) => {
+                            [...node.folders.entries()]
+                                .sort(([a], [b]) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
+                                .forEach(([folderName, folderNode]) => {
+                                    const details = document.createElement('details');
+                                    details.className = 'lora-tree-folder';
+                                    details.open = folderNode.containsSelected;
+                                    const summary = document.createElement('summary');
+                                    summary.innerText = folderName;
+                                    summary.title = folderName;
+                                    const children = document.createElement('div');
+                                    children.className = 'lora-tree-children';
+                                    renderLevel(folderNode, children);
+                                    details.appendChild(summary);
+                                    details.appendChild(children);
+                                    parent.appendChild(details);
+                                });
+
+                            [...node.files]
+                                .sort((a, b) => a.filename.localeCompare(b.filename, undefined, { sensitivity: 'base' }))
+                                .forEach(file => {
+                                    parent.appendChild(createFileButton(file.value, formatLoraDisplayName(file.filename)));
+                                });
+                        };
+                        renderLevel(tree, menu);
+
+                        button.onclick = event => {
+                            event.stopPropagation();
+                            if (!loraEditMode) return;
+                            const willOpen = !picker.classList.contains('open');
+                            closeAllLoraPickers(picker);
+                            if (!willOpen) {
+                                closePicker();
+                                return;
+                            }
+                            picker.classList.add('open');
+                            button.setAttribute('aria-expanded', 'true');
+                            document.addEventListener('pointerdown', handleOutsidePointer, true);
+                            requestAnimationFrame(() => {
+                                menu.querySelector('.lora-tree-file.active')?.scrollIntoView({ block: 'nearest' });
+                            });
+                        };
+                        picker.addEventListener('keydown', event => {
+                            if (event.key === 'Escape') {
+                                event.preventDefault();
+                                closePicker();
+                                button.focus();
+                            }
+                        });
+
+                        updateButton();
+                        picker.appendChild(button);
+                        picker.appendChild(menu);
+                        return picker;
                     };
                     
                     const addSingleRow = (rowData = { lora_name: "None", strength: 1.0, enabled: true }) => {
                         const row = document.createElement('div');
-                        row.className = 'lora-row';
+                        row.className = 'lora-row lora-list-item';
+                        row.dataset.itemType = 'lora';
+                        row.dataset.loraName = rowData.lora_name || 'None';
+
+                        const dragHandle = createDragHandle(row);
                         
                         const btnDel = document.createElement('button');
                         btnDel.type = 'button';
@@ -2346,32 +3795,44 @@
                             updateHiddenInput();
                         };
                         
-                        const sel = document.createElement('select');
-                        // 🔒 确保即使当前保存的 LoRA 名称不在远程列表中，也能正确加入并显示
-                        const availableOptions = [...loraValues];
-                        if (rowData.lora_name && !availableOptions.includes(rowData.lora_name)) {
-                            availableOptions.push(rowData.lora_name);
-                        }
-
-                        availableOptions.forEach(v => {
-                            const opt = document.createElement('option');
-                            opt.value = v; opt.innerText = v;
-                            sel.appendChild(opt);
-                        });
-                        sel.value = rowData.lora_name || "None";
-                        sel.onchange = updateHiddenInput;
+                        const loraPicker = createLoraPicker(row, rowData.lora_name || 'None');
                         
                         const strInput = document.createElement('input');
                         strInput.type = 'number';
-                        strInput.className = 'number-input';
-                        strInput.min = '0.00';
+                        strInput.className = 'number-input lora-strength-input';
+                        strInput.min = '-100.00';
                         strInput.max = '100.00';
-                        strInput.step = '0.01';
+                        strInput.step = '0.05';
                         strInput.value = formatStrength(rowData.strength ?? 1.0);
                         strInput.onchange = () => {
                             strInput.value = formatStrength(strInput.value);
                             updateHiddenInput();
                         };
+
+                        const strengthControl = document.createElement('div');
+                        strengthControl.className = 'lora-strength-control';
+
+                        const createStrengthButton = (delta, symbol, title) => {
+                            const button = document.createElement('button');
+                            button.type = 'button';
+                            button.className = 'lora-strength-btn';
+                            button.innerText = symbol;
+                            button.title = title;
+                            button.setAttribute('aria-label', title);
+                            button.onclick = () => {
+                                const current = parseFloat(strInput.value);
+                                const safeCurrent = Number.isFinite(current) ? current : 0;
+                                strInput.value = formatStrength(safeCurrent + delta);
+                                updateHiddenInput();
+                            };
+                            return button;
+                        };
+
+                        const btnStrengthDown = createStrengthButton(-0.05, '−', 'Decrease strength by 0.05');
+                        const btnStrengthUp = createStrengthButton(0.05, '+', 'Increase strength by 0.05');
+                        strengthControl.appendChild(btnStrengthDown);
+                        strengthControl.appendChild(strInput);
+                        strengthControl.appendChild(btnStrengthUp);
                         
                         const toggle = document.createElement('div');
                         toggle.className = 'toggle-switch' + (rowData.enabled ? ' active' : '');
@@ -2380,10 +3841,40 @@
                             updateHiddenInput();
                         };
                         
+                        row.appendChild(dragHandle);
                         row.appendChild(btnDel);
-                        row.appendChild(sel);
-                        row.appendChild(strInput);
+                        row.appendChild(loraPicker);
+                        row.appendChild(strengthControl);
                         row.appendChild(toggle);
+                        rowsContainer.appendChild(row);
+                    };
+
+                    const addDividerRow = () => {
+                        const row = document.createElement('div');
+                        row.className = 'lora-divider-row lora-list-item';
+                        row.dataset.itemType = 'separator';
+
+                        const dragHandle = createDragHandle(row);
+
+                        const btnDel = document.createElement('button');
+                        btnDel.type = 'button';
+                        btnDel.title = t('remove', 'Remove');
+                        btnDel.className = 'btn-del-lora';
+                        btnDel.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
+                        btnDel.onclick = () => {
+                            row.remove();
+                            updateHiddenInput();
+                        };
+
+                        const content = document.createElement('div');
+                        content.className = 'lora-divider-content';
+                        const line = document.createElement('span');
+                        line.className = 'lora-divider-line';
+                        content.appendChild(line);
+
+                        row.appendChild(dragHandle);
+                        row.appendChild(btnDel);
+                        row.appendChild(content);
                         rowsContainer.appendChild(row);
                     };
                     
@@ -2410,6 +3901,32 @@
                         addSingleRow({ lora_name: "None", strength: 1.0, enabled: true });
                         updateHiddenInput();
                     };
+
+                    btnDivider.onclick = () => {
+                        addDividerRow();
+                        updateHiddenInput();
+                    };
+
+                    btnEdit.onclick = () => {
+                        loraEditMode = !loraEditMode;
+                        container.classList.toggle('editing', loraEditMode);
+                        btnEdit.classList.toggle('active', loraEditMode);
+                        btnEdit.innerText = loraEditMode ? 'Done' : 'Edit';
+                        btnEdit.title = loraEditMode
+                            ? 'Finish editing the LoRA list'
+                            : 'Show reorder and remove controls';
+                        rowsContainer.querySelectorAll('.lora-drag-handle').forEach(handle => {
+                            handle.draggable = loraEditMode;
+                        });
+                        rowsContainer.querySelectorAll('.lora-picker-button').forEach(button => {
+                            button.tabIndex = loraEditMode ? 0 : -1;
+                            button.setAttribute('aria-disabled', String(!loraEditMode));
+                        });
+                        if (!loraEditMode) {
+                            closeAllLoraPickers();
+                            clearDragState();
+                        }
+                    };
                     
                     // 💡【核心解析】：解析当前的 LoRA 字符串数据并渲染行
                     let initData = [];
@@ -2420,7 +3937,10 @@
                     
                     rowsContainer.innerHTML = '';
                     if (Array.isArray(initData) && initData.length > 0) {
-                        initData.forEach(item => addSingleRow(item));
+                        initData.forEach(item => {
+                            if (item?.type === 'separator' || item?.separator === true) addDividerRow();
+                            else addSingleRow(item);
+                        });
                     }
                     updateHiddenInput();
                     
@@ -2814,13 +4334,19 @@
                         const container = document.createElement('div');
                         container.className = 'input-with-button';
                         const input = document.createElement('textarea');
-                        input.className = 'tight-textarea'; input.style.height = '57px';
-                        input.value = currentValue ?? ''; input.id = `input_${key}`; input.rows = 1; input.placeholder = params.placeholder || "";
+                        input.className = 'tight-textarea';
+                        input.value = currentValue ?? ''; input.id = `input_${key}`; input.rows = 4; input.placeholder = params.placeholder || "";
                         container.appendChild(input);
+                        const historyBtn = document.createElement('button');
+                        historyBtn.className = 'btn-prompt-history'; historyBtn.type = 'button'; historyBtn.title = 'Prompt history';
+                        historyBtn.setAttribute('aria-label', 'Open prompt history');
+                        historyBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>';
+                        historyBtn.onclick = () => openPromptHistory(input, key, params.name || key);
                         const editBtn = document.createElement('button');
                         editBtn.className = 'btn-edit-multiline'; editBtn.type = 'button'; editBtn.title = t('btn_edit', "Multiline Editor");
                         editBtn.innerText = '📝'; editBtn.onclick = () => openMultilineEditor(input, params.name || key);
                         container.appendChild(editBtn);
+                        container.appendChild(historyBtn);
                         group.appendChild(container);
                     } else {
                         const input = document.createElement('input');
@@ -2829,7 +4355,53 @@
                         group.appendChild(input);
                     }
                 }
-                formContainer.appendChild(group);
+                if (params.additional === true) {
+                    group.classList.add('additional-control-group');
+                    additionalControlGroups.push({ control: group, groupId: params.group_id });
+                } else {
+                    appendPrimaryControl(group, params.group_id);
+                }
+            }
+
+            if (additionalControlGroups.length > 0) {
+                const details = document.createElement('details');
+                details.className = 'additional-controls';
+                details.open = additionalControlsExpanded;
+
+                const summary = document.createElement('summary');
+                const title = document.createElement('span');
+                title.className = 'additional-controls-title';
+                title.innerText = t('additional_controls', 'Additional controls');
+                const count = document.createElement('span');
+                count.className = 'additional-controls-count';
+                count.innerText = String(additionalControlGroups.length);
+                const chevron = document.createElement('span');
+                chevron.className = 'additional-controls-chevron';
+                chevron.innerText = '▾';
+                summary.appendChild(title);
+                summary.appendChild(count);
+                summary.appendChild(chevron);
+
+                const body = document.createElement('div');
+                body.className = 'additional-controls-body';
+                const appendAdditionalControl = createVisualGroupAppender(body);
+                additionalControlGroups.forEach(item => appendAdditionalControl(item.control, item.groupId));
+                details.appendChild(summary);
+                details.appendChild(body);
+                const refreshAdditionalSliders = () => {
+                    requestAnimationFrame(() => {
+                        body.querySelectorAll('input[type="range"]').forEach(input => {
+                            input.dispatchEvent(new Event('input'));
+                        });
+                    });
+                };
+                details.addEventListener('toggle', () => {
+                    additionalControlsExpanded = details.open;
+                    if (!details.open) return;
+                    refreshAdditionalSliders();
+                });
+                formContainer.appendChild(details);
+                if (details.open) refreshAdditionalSliders();
             }
         }
         
@@ -2844,17 +4416,148 @@
         }
         document.getElementById('multiline-modal-close').onclick = closeMultilineModal;
         document.getElementById('multiline-btn-cancel').onclick = closeMultilineModal;
-        document.getElementById('multiline-btn-save').onclick = () => {
+        document.getElementById('multiline-btn-save').onclick = saveMultilineModal;
+        function saveMultilineModal() {
             if (activeInputEl) {
                 activeInputEl.value = document.getElementById('multiline-textarea').value;
                 activeInputEl.dispatchEvent(new Event('change'));
             }
             closeMultilineModal();
-        };
+        }
         function closeMultilineModal() {
             document.getElementById('multiline-modal').style.display = 'none';
             activeInputEl = null;
         }
+
+        function renderPromptHistoryList() {
+            const list = document.getElementById('prompt-history-list');
+            const filterButton = document.getElementById('prompt-history-filter');
+            list.innerHTML = '';
+            filterButton.classList.toggle('active', promptHistoryFavoritesOnly);
+            filterButton.setAttribute('aria-pressed', String(promptHistoryFavoritesOnly));
+            filterButton.innerText = promptHistoryFavoritesOnly ? '★ Favorites only' : '☆ Favorites only';
+
+            const allEntries = activePromptHistoryControl ? getPromptHistoryEntries(activePromptHistoryControl.key) : [];
+            const entries = allEntries
+                .filter(entry => !promptHistoryFavoritesOnly || entry?.favorite === true)
+                .sort((a, b) => {
+                    const favoriteDifference = Number(b?.favorite === true) - Number(a?.favorite === true);
+                    return favoriteDifference || Number(b?.createdAt || 0) - Number(a?.createdAt || 0);
+                });
+
+            if (entries.length === 0) {
+                const empty = document.createElement('div');
+                empty.className = 'prompt-history-empty';
+                empty.innerText = promptHistoryFavoritesOnly
+                    ? 'No favorite prompts yet.'
+                    : 'No used prompts yet. A prompt is saved here when you start a generation.';
+                list.appendChild(empty);
+                return;
+            }
+
+            entries.forEach(entry => {
+                const item = document.createElement('div');
+                item.className = 'prompt-history-item';
+                const main = document.createElement('button');
+                main.type = 'button'; main.className = 'prompt-history-item-main';
+                const text = document.createElement('span');
+                text.className = 'prompt-history-item-text'; text.innerText = entry.value;
+                const date = document.createElement('span');
+                date.className = 'prompt-history-item-date';
+                date.innerText = entry.createdAt ? new Date(entry.createdAt).toLocaleString() : '';
+                main.appendChild(text); main.appendChild(date);
+                main.onclick = () => {
+                    const input = activePromptHistoryControl?.input;
+                    if (!input) return;
+                    input.value = entry.value;
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                    closePromptHistory();
+                    input.focus();
+                };
+                const actions = document.createElement('div');
+                actions.className = 'prompt-history-item-actions';
+                const favoriteButton = document.createElement('button');
+                favoriteButton.type = 'button';
+                favoriteButton.className = `prompt-history-action prompt-history-favorite${entry.favorite === true ? ' active' : ''}`;
+                favoriteButton.innerText = entry.favorite === true ? '★' : '☆';
+                favoriteButton.title = entry.favorite === true ? 'Remove from favorites' : 'Add to favorites';
+                favoriteButton.setAttribute('aria-label', favoriteButton.title);
+                favoriteButton.onclick = () => {
+                    if (!activePromptHistoryControl) return;
+                    const storedEntries = getPromptHistoryEntries(activePromptHistoryControl.key);
+                    const storedEntry = storedEntries.find(candidate => candidate?.value === entry.value);
+                    if (!storedEntry) return;
+                    storedEntry.favorite = storedEntry.favorite !== true;
+                    const appId = getCurrentAppHistoryId();
+                    promptHistory.apps[appId][activePromptHistoryControl.key] = limitPromptHistoryEntries(storedEntries);
+                    persistPromptHistory();
+                    renderPromptHistoryList();
+                };
+                const deleteButton = document.createElement('button');
+                deleteButton.type = 'button'; deleteButton.className = 'prompt-history-action prompt-history-delete';
+                deleteButton.title = 'Delete prompt'; deleteButton.setAttribute('aria-label', 'Delete prompt');
+                deleteButton.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>';
+                deleteButton.onclick = () => {
+                    if (!activePromptHistoryControl) return;
+                    if (!confirm('Delete this prompt from history?')) return;
+                    const appId = getCurrentAppHistoryId();
+                    const storedEntries = getPromptHistoryEntries(activePromptHistoryControl.key);
+                    promptHistory.apps[appId][activePromptHistoryControl.key] = storedEntries.filter(candidate => candidate?.value !== entry.value);
+                    persistPromptHistory();
+                    renderPromptHistoryList();
+                };
+                actions.appendChild(favoriteButton); actions.appendChild(deleteButton);
+                item.appendChild(main); item.appendChild(actions);
+                list.appendChild(item);
+            });
+        }
+
+        function openPromptHistory(input, key, title) {
+            activePromptHistoryControl = { input, key };
+            promptHistoryFavoritesOnly = false;
+            document.getElementById('prompt-history-title').innerText = `Prompt history: ${title}`;
+            renderPromptHistoryList();
+            document.getElementById('prompt-history-modal').style.display = 'flex';
+        }
+
+        function closePromptHistory() {
+            document.getElementById('prompt-history-modal').style.display = 'none';
+            activePromptHistoryControl = null;
+        }
+
+        document.getElementById('prompt-history-close').onclick = closePromptHistory;
+        document.getElementById('prompt-history-cancel').onclick = closePromptHistory;
+        document.getElementById('prompt-history-filter').onclick = () => {
+            promptHistoryFavoritesOnly = !promptHistoryFavoritesOnly;
+            renderPromptHistoryList();
+        };
+        document.getElementById('prompt-history-modal').addEventListener('click', event => {
+            if (event.target.id === 'prompt-history-modal') closePromptHistory();
+        });
+
+        // Modal shortcuts take precedence over the global Run shortcut.
+        window.addEventListener('keydown', event => {
+            const multilineModal = document.getElementById('multiline-modal');
+            const historyModal = document.getElementById('prompt-history-modal');
+            const multilineOpen = multilineModal?.style.display === 'flex';
+            const historyOpen = historyModal?.style.display === 'flex';
+            if (!multilineOpen && !historyOpen) return;
+
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                if (multilineOpen) closeMultilineModal();
+                else closePromptHistory();
+                return;
+            }
+
+            if ((event.metaKey || event.ctrlKey) && event.key === 'Enter' && !event.repeat && !event.isComposing) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                if (multilineOpen) saveMultilineModal();
+            }
+        }, true);
                         
         // 🔍 规范化 URL (剥离 #t=0.001 等哈希标记用于匹配)
         const normalizeLightboxUrl = (u) => {
@@ -2865,6 +4568,241 @@
                 return u.split('#')[0];
             }
         };
+
+        function getMediaFilename(url) {
+            try {
+                const parsed = new URL(url, window.location.href);
+                return parsed.searchParams.get('filename') || parsed.pathname.split('/').pop() || 'media';
+            } catch(e) {
+                return String(url).split('/').pop().split('?')[0] || 'media';
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (!Number.isFinite(bytes) || bytes < 0) return 'Size unavailable';
+            if (bytes < 1024) return `${bytes} B`;
+            if (bytes < 1024 ** 2) return `${(bytes / 1024).toFixed(1)} KB`;
+            if (bytes < 1024 ** 3) return `${(bytes / (1024 ** 2)).toFixed(2)} MB`;
+            return `${(bytes / (1024 ** 3)).toFixed(2)} GB`;
+        }
+
+        function greatestCommonDivisor(a, b) {
+            a = Math.abs(Math.round(a));
+            b = Math.abs(Math.round(b));
+            while (b) [a, b] = [b, a % b];
+            return a || 1;
+        }
+
+        function formatAspectRatio(width, height) {
+            if (!width || !height) return '';
+            const ratio = width / height;
+            const commonRatios = [
+                [1, 1], [3, 2], [2, 3], [4, 3], [3, 4], [5, 4], [4, 5],
+                [16, 9], [9, 16], [21, 9], [9, 21]
+            ];
+            let closest = null;
+            let closestError = Infinity;
+            for (const candidate of commonRatios) {
+                const candidateRatio = candidate[0] / candidate[1];
+                const error = Math.abs(ratio - candidateRatio) / candidateRatio;
+                if (error < closestError) {
+                    closest = candidate;
+                    closestError = error;
+                }
+            }
+            if (closest && closestError <= 0.02) return `${closest[0]}:${closest[1]}`;
+            const divisor = greatestCommonDivisor(width, height);
+            return `${Math.round(width / divisor)}:${Math.round(height / divisor)}`;
+        }
+
+        function renderLightboxMetadata() {
+            if (!currentLightboxMetadata) return;
+            const nameEl = document.getElementById('lightbox-metadata-name');
+            const detailsEl = document.getElementById('lightbox-metadata-details');
+            if (!nameEl || !detailsEl) return;
+
+            nameEl.innerText = currentLightboxMetadata.filename;
+            nameEl.title = currentLightboxMetadata.filename;
+            const details = [];
+            if (currentLightboxMetadata.width && currentLightboxMetadata.height) {
+                details.push(`${currentLightboxMetadata.width} × ${currentLightboxMetadata.height} px`);
+                details.push(formatAspectRatio(currentLightboxMetadata.width, currentLightboxMetadata.height));
+            } else {
+                details.push('Loading dimensions…');
+            }
+            if (currentLightboxMetadata.fileSize !== undefined) {
+                details.push(formatFileSize(currentLightboxMetadata.fileSize));
+            } else {
+                details.push('Loading size…');
+            }
+            detailsEl.innerText = details.join('  ·  ');
+        }
+
+        async function getLightboxFileSize(url) {
+            const normalizedUrl = normalizeLightboxUrl(url);
+            if (lightboxFileSizeCache.has(normalizedUrl)) return lightboxFileSizeCache.get(normalizedUrl);
+            try {
+                const response = await fetch(normalizedUrl, { method: 'HEAD' });
+                const contentLength = response.headers.get('content-length');
+                const size = response.ok && contentLength ? Number(contentLength) : NaN;
+                const result = Number.isFinite(size) ? size : -1;
+                lightboxFileSizeCache.set(normalizedUrl, result);
+                return result;
+            } catch(e) {
+                lightboxFileSizeCache.set(normalizedUrl, -1);
+                return -1;
+            }
+        }
+
+        function beginLightboxMetadata(url) {
+            const requestId = ++lightboxMetadataRequestId;
+            currentLightboxMetadata = {
+                requestId,
+                url: normalizeLightboxUrl(url),
+                filename: getMediaFilename(url),
+                width: 0,
+                height: 0,
+                fileSize: undefined
+            };
+            renderLightboxMetadata();
+            getLightboxFileSize(url).then(fileSize => {
+                if (!currentLightboxMetadata || currentLightboxMetadata.requestId !== requestId) return;
+                currentLightboxMetadata.fileSize = fileSize;
+                renderLightboxMetadata();
+            });
+            return requestId;
+        }
+
+        function setLightboxDimensions(requestId, width, height) {
+            if (!currentLightboxMetadata || currentLightboxMetadata.requestId !== requestId) return;
+            if (!width || !height) return;
+            currentLightboxMetadata.width = width;
+            currentLightboxMetadata.height = height;
+            renderLightboxMetadata();
+        }
+
+        function formatHistoryControlValue(control) {
+            const value = control?.value;
+            if (control?.type === 'BOOLEAN' || control?.type === 'BYPASSER') return value ? 'True' : 'False';
+            if (control?.type === 'LORA_STACK') {
+                try {
+                    const loras = typeof value === 'string' ? JSON.parse(value) : value;
+                    if (Array.isArray(loras)) {
+                        if (loras.length === 0) return 'No LoRA';
+                        return loras.map(item => {
+                            if (item?.type === 'separator' || item?.separator === true) {
+                                return '────────';
+                            }
+                            const state = item.enabled === false ? 'off' : Number(item.strength ?? 1).toFixed(2);
+                            return `${formatLoraDisplayName(item.lora_name)} (${state})`;
+                        }).join('\n');
+                    }
+                } catch(e) {}
+            }
+            if (value && typeof value === 'object') {
+                try { return JSON.stringify(value, null, 2); } catch(e) {}
+            }
+            return value === undefined || value === null ? '' : String(value);
+        }
+
+        function renderLightboxParameters(url) {
+            const snapshot = getGenerationSnapshotForMedia(url);
+            const toggle = document.getElementById('lightbox-params-toggle');
+            const panel = document.getElementById('lightbox-params-panel');
+            const list = document.getElementById('lightbox-params-list');
+            const date = document.getElementById('lightbox-params-date');
+            const restore = document.getElementById('lightbox-restore-btn');
+            if (!toggle || !panel || !list || !date || !restore) return;
+
+            const controls = snapshot ? Object.entries(snapshot.controls || {}) : [];
+            toggle.disabled = controls.length === 0;
+            toggle.innerText = controls.length > 0 ? `Parameters (${controls.length})` : 'No parameters';
+            toggle.title = controls.length > 0
+                ? 'Show parameters used for this generation'
+                : 'This result was created before parameter history was enabled';
+            panel.dataset.generationId = snapshot?.id || '';
+            restore.disabled = controls.length === 0;
+            if (controls.length === 0) panel.classList.remove('visible');
+
+            list.replaceChildren();
+            controls.forEach(([key, control]) => {
+                const row = document.createElement('div');
+                row.className = 'lightbox-param-row';
+                const name = document.createElement('div');
+                name.className = 'lightbox-param-name';
+                name.innerText = `${control.name || key} · ${control.type || 'VALUE'}`;
+                const value = document.createElement('div');
+                value.className = 'lightbox-param-value';
+                value.innerText = formatHistoryControlValue(control);
+                row.appendChild(name);
+                row.appendChild(value);
+                list.appendChild(row);
+            });
+            const dateParts = [];
+            if (snapshot?.createdAt) dateParts.push(new Date(snapshot.createdAt).toLocaleString());
+            if (snapshot?.batchCount) dateParts.push(`Batch ${snapshot.batchCount}`);
+            date.innerText = dateParts.join(' · ');
+        }
+
+        async function restoreGenerationSnapshot(snapshot) {
+            if (!snapshot?.controls || !currentFormConfig) return;
+            const currentAppId = appFileName || (sourceNodeId ? `node_${sourceNodeId}` : 'appview');
+            if (snapshot.appId && snapshot.appId !== currentAppId) {
+                const shouldContinue = confirm('This result was created in another App configuration. Restore matching controls anyway?');
+                if (!shouldContinue) return;
+            }
+            const restoredConfig = cloneHistoryValue(currentFormConfig);
+            const parentNode = window.comfyApp && sourceNodeId ? window.comfyApp.graph.getNodeById(sourceNodeId) : null;
+            let applied = 0;
+
+            Object.entries(snapshot.controls).forEach(([key, saved]) => {
+                const currentParams = restoredConfig[key];
+                if (!currentParams) return;
+                const currentType = String(currentParams.type || 'STRING').toUpperCase();
+                if (saved.type && currentType !== String(saved.type).toUpperCase()) return;
+
+                const value = cloneHistoryValue(saved.value);
+                currentParams.value = value;
+                currentParams.default = value;
+                const restoredSeedMode = currentType === 'SEED' ? 'fixed' : saved.seedMode;
+                if (restoredSeedMode) currentParams.seed_mode = restoredSeedMode;
+
+                const widget = parentNode?.widgets?.find(item => item.name === key);
+                if (widget) {
+                    widget.value = value;
+                    if (widget.callback) widget.callback(value);
+                }
+                if (restoredSeedMode && widget && parentNode) {
+                    const widgetIndex = parentNode.widgets.indexOf(widget);
+                    const companion = parentNode.widgets[widgetIndex + 1];
+                    if (companion?.name === 'control_after_generate') {
+                        companion.value = restoredSeedMode;
+                        if (companion.callback) companion.callback(restoredSeedMode);
+                    }
+                }
+                applied++;
+            });
+
+            if (applied === 0) {
+                alert('No matching controls were found in the current App configuration.');
+                return;
+            }
+
+            const batchInput = document.getElementById('input-batch-count');
+            if (batchInput && snapshot.batchCount) batchInput.value = String(snapshot.batchCount);
+            await renderDynamicForm(restoredConfig);
+            closeLightbox();
+
+            const statusText = document.getElementById('status-text');
+            if (statusText) {
+                statusText.innerText = `Restored ${applied} parameter${applied === 1 ? '' : 's'}`;
+                statusText.style.color = 'var(--primary)';
+                setTimeout(() => {
+                    statusText.innerText = t('label_ready', 'Ready');
+                    statusText.style.color = 'var(--title)';
+                }, 1800);
+            }
+        }
         
         function openLightbox(src) {
             if (src && !src.startsWith('data:image/svg+xml')) {
@@ -2972,6 +4910,7 @@
         function closeLightbox() {
             const lightboxModal = document.getElementById('lightbox-modal');
             if (lightboxModal) lightboxModal.style.display = 'none';
+            document.getElementById('lightbox-params-panel')?.classList.remove('visible');
             // 🎬 关闭灯箱时停止视频播放
             const lbVid = document.getElementById('lightbox-video');
             if (lbVid) {
@@ -2983,6 +4922,8 @@
                     
         function updateLightboxUI() {
             const imgUrl = currentImagesList[currentLightboxIndex];
+            const metadataRequestId = beginLightboxMetadata(imgUrl);
+            renderLightboxParameters(imgUrl);
             resetLightboxZoom(false); // 切换时自动复原缩放
             
             const lbImg = document.getElementById('lightbox-img');
@@ -3007,6 +4948,9 @@
             
             if (isVideo) {
                 if (lbImg) lbImg.style.display = 'none';
+                lbVid.onloadedmetadata = () => {
+                    setLightboxDimensions(metadataRequestId, lbVid.videoWidth, lbVid.videoHeight);
+                };
                 lbVid.src = imgUrl;
                 lbVid.muted = true;         // 👈 默认静音
                 lbVid.defaultMuted = true;
@@ -3018,8 +4962,14 @@
                     lbVid.pause();
                 }
                 if (lbImg) {
+                    lbImg.onload = () => {
+                        setLightboxDimensions(metadataRequestId, lbImg.naturalWidth, lbImg.naturalHeight);
+                    };
                     lbImg.src = imgUrl;
                     lbImg.style.display = 'block';
+                    if (lbImg.complete && lbImg.naturalWidth) {
+                        setLightboxDimensions(metadataRequestId, lbImg.naturalWidth, lbImg.naturalHeight);
+                    }
                 }
             }
             
@@ -3045,6 +4995,30 @@
             document.getElementById('lightbox-prev').onclick = (e) => { e.stopPropagation(); navigateLightbox(-1); };
             document.getElementById('lightbox-next').onclick = (e) => { e.stopPropagation(); navigateLightbox(1); };
             document.getElementById('lightbox-close').onclick = (e) => { e.stopPropagation(); closeLightbox(); };
+            const paramsToggle = document.getElementById('lightbox-params-toggle');
+            const paramsPanel = document.getElementById('lightbox-params-panel');
+            const paramsClose = document.getElementById('lightbox-params-close');
+            const restoreButton = document.getElementById('lightbox-restore-btn');
+            if (paramsToggle && paramsPanel) {
+                paramsToggle.onclick = (e) => {
+                    e.stopPropagation();
+                    if (!paramsToggle.disabled) paramsPanel.classList.toggle('visible');
+                };
+                paramsPanel.addEventListener('click', e => e.stopPropagation());
+            }
+            if (paramsClose && paramsPanel) {
+                paramsClose.onclick = (e) => {
+                    e.stopPropagation();
+                    paramsPanel.classList.remove('visible');
+                };
+            }
+            if (restoreButton && paramsPanel) {
+                restoreButton.onclick = async (e) => {
+                    e.stopPropagation();
+                    const snapshot = generationHistory.generations[paramsPanel.dataset.generationId];
+                    if (snapshot) await restoreGenerationSnapshot(snapshot);
+                };
+            }
             
             window.addEventListener('keydown', (e) => {
                 if (lightboxModal.style.display !== 'flex') return;
@@ -3068,6 +5042,7 @@
             // 1. 💻 电脑端：鼠标滚轮缩放
             lightboxModal.addEventListener('wheel', (e) => {
                 if (lightboxModal.style.display !== 'flex') return;
+                if (e.target.closest?.('#lightbox-params-panel')) return;
                 e.preventDefault();
                 
                 const zoomFactor = e.deltaY < 0 ? 1.15 : 0.85;
@@ -3478,6 +5453,8 @@
                 // 4. 转换 Prompt
                 const apiPrompt = await convertWorkflowToApiPrompt(standaloneWorkflowData, formValues);
                 console.log("📦 [AppView] 最终提交给后端的 API Prompt:", apiPrompt);
+                const generationId = createGenerationSnapshot(formValues, batchCount);
+                queueGenerationSnapshot(generationId, 1);
 
                 // 5. 提交 Prompt 到 ComfyUI 后端
                 try {
@@ -3490,13 +5467,18 @@
                         })
                     });
                     if (!res.ok) {
+                        discardQueuedGenerationSnapshot(generationId);
                         const errJson = await res.json();
                         alert(t("queue_error", "⚠️ Queue Error\n\n{0}", (errJson.error?.message || res.statusText)));
                         statusText.innerText = t("label_ready", "Ready");
                         document.getElementById('btn-run').style.backgroundColor = '#3E8AE2';
                         document.getElementById('btn-run').innerText = t("button_run", "▷ Run");
+                    } else {
+                        const result = await res.json();
+                        if (result?.prompt_id) generationIdByPromptId.set(result.prompt_id, generationId);
                     }
                 } catch(e) { 
+                    discardQueuedGenerationSnapshot(generationId);
                     alert(t("queue_error", "⚠️ Queue Error\n\n{0}", e.message)); 
                     statusText.innerText = t("label_ready", "Ready");
                     document.getElementById('btn-run').style.backgroundColor = '#3E8AE2';
@@ -3539,8 +5521,26 @@
             const batchInput = document.getElementById('input-batch-count');
             const batchCount = batchInput ? Math.max(1, parseInt(batchInput.value) || 1) : 1;
             batchInput.value = batchCount;
-            window.comfyApp.queuePrompt(0, batchCount); 
+            const formValues = getAppViewFormValues();
+            const generationId = createGenerationSnapshot(formValues, batchCount);
+            queueGenerationSnapshot(generationId, batchCount);
+            try {
+                await window.comfyApp.queuePrompt(0, batchCount);
+            } catch(e) {
+                discardQueuedGenerationSnapshot(generationId);
+                console.error('[AppBuilder] Queue failed:', e);
+            }
         });
+
+        // Match ComfyUI's familiar queue shortcut in both canvas and standalone AppView modes.
+        window.addEventListener('keydown', (e) => {
+            const isRunShortcut = (e.metaKey || e.ctrlKey) && e.key === 'Enter';
+            if (!isRunShortcut || e.repeat || e.isComposing) return;
+
+            e.preventDefault();
+            const runButton = document.getElementById('btn-run');
+            if (runButton && !runButton.disabled) runButton.click();
+        }, true);
         
         async function pasteClipboardMedia(onFileObtained) {
             if (navigator.clipboard && navigator.clipboard.read) {
